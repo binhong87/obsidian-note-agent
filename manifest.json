@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-agent",
+  "name": "Obsidian Agent",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Agentic assistant for personal knowledge management.",
+  "author": "You",
+  "isDesktopOnly": false
+}
