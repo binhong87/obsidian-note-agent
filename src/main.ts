@@ -95,7 +95,7 @@ export default class ObsidianAgentPlugin extends Plugin {
       computeDiff: (p) => this.computeDiff(p),
     });
     this.statusBar.render("thinking");
-    try { yield* this.currentLoop.run(); }
+    try { yield* this.currentLoop.send(text); }
     finally {
       this.statusBar.render("idle");
       this.currentLoop = null;
