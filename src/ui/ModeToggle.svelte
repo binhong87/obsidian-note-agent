@@ -38,7 +38,7 @@
     display: flex;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
+    border-radius: 7px;
     padding: 2px;
     gap: 1px;
   }
@@ -46,22 +46,27 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 9px;
+    padding: 3px 10px;
     font-size: 11px;
     font-weight: 500;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     background: transparent;
     color: var(--text-muted);
-    transition: background 150ms ease, color 150ms ease;
+    transition: background 150ms ease, color 150ms ease, transform 120ms ease;
     white-space: nowrap;
   }
   .mt-option:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
   .mt-option:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 1px; }
+  .mt-option:active { transform: scale(0.97); }
   .mt-active {
-    background: var(--background-primary) !important;
-    color: var(--text-normal) !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    background: linear-gradient(
+      135deg,
+      var(--interactive-accent),
+      color-mix(in srgb, var(--interactive-accent) 72%, #000)
+    ) !important;
+    color: var(--text-on-accent, #fff) !important;
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
   }
 </style>

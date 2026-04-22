@@ -14,8 +14,7 @@
   }
 
   function label(p: string): string {
-    const name = p.split("/").pop() ?? p;
-    return name.replace(/\.md$/i, "");
+    return (p.split("/").pop() ?? p).replace(/\.md$/i, "");
   }
 
   function dateHint(p: string): string {
@@ -52,14 +51,12 @@
     flex-direction: column;
     padding: 4px 0;
   }
-
   .cl-empty {
     padding: 10px 14px;
     font-size: 12px;
     color: var(--text-faint);
     font-style: italic;
   }
-
   .cl-item {
     display: flex;
     align-items: center;
@@ -72,34 +69,24 @@
     font-size: 12px;
     text-align: left;
     cursor: pointer;
-    border-radius: 0;
-    transition: background 120ms ease, color 120ms ease;
+    border-left: 3px solid transparent;
+    transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
     white-space: nowrap;
     overflow: hidden;
   }
   .cl-item:hover {
     background: var(--background-modifier-hover);
     color: var(--text-normal);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   }
-  .cl-item:focus-visible {
-    outline: 2px solid var(--interactive-accent);
-    outline-offset: -2px;
-  }
+  .cl-item:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
   .cl-active {
-    background: color-mix(in srgb, var(--interactive-accent) 12%, transparent) !important;
+    border-left-color: var(--interactive-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent) !important;
     color: var(--text-accent) !important;
   }
-
-  .cl-icon { flex-shrink: 0; opacity: 0.6; }
-
-  .cl-label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 450;
-  }
-
+  .cl-icon { flex-shrink: 0; opacity: 0.55; }
+  .cl-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cl-date {
     font-size: 10px;
     color: var(--text-faint);

@@ -17,30 +17,50 @@
     return TOOL_ICONS[name] ?? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
   }
 
-  // Parse diff lines for syntax highlighting
-  function parseDiff(diff: string): { type: 'add'|'del'|'ctx'; text: string }[] {
-    return diff.split("\n").map(line => {
-      if (line.startsWith("+")) return { type: "add", text: line };
-      if (line.startsWith("-")) return { type: "del", text: line };
-      return { type: "ctx", text: line };
-    });
+  type DiffLine = { type: 'add' | 'del' | 'ctx'; text: string; oldLine?: number; newLine?: number };
+
+  function parseDiff(diff: string): DiffLine[] {
+    const result: DiffLine[] = [];
+    let oldLine = 0, newLine = 0;
+    for (const raw of diff.split("\n")) {
+      if (raw.startsWith("---") || raw.startsWith("+++")) continue;
+      if (raw.startsWith("@@")) {
+        const m = raw.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (m) { oldLine = parseInt(m[1]); newLine = parseInt(m[2]); }
+        continue;
+      }
+      if (raw.startsWith("+")) {
+        result.push({ type: "add", text: raw.slice(1), newLine: newLine++ });
+      } else if (raw.startsWith("-")) {
+        result.push({ type: "del", text: raw.slice(1), oldLine: oldLine++ });
+      } else {
+        result.push({ type: "ctx", text: raw.slice(1), oldLine: oldLine++, newLine: newLine++ });
+      }
+    }
+    return result;
   }
 
   $: diffLines = p.diff ? parseDiff(p.diff) : [];
   $: filePath = p.args?.path ?? p.args?.from ?? p.args?.to ?? "";
+  $: fileName = filePath ? filePath.split("/").pop() ?? filePath : "";
 </script>
 
 <div class="db-root">
   <!-- Header -->
   <div class="db-header">
     <div class="db-header-left">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        {@html toolIcon(p.tool)}
-      </svg>
+      <div class="db-tool-icon" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          {@html toolIcon(p.tool)}
+        </svg>
+      </div>
       <span class="db-tool-name">{p.tool.replace(/_/g, " ")}</span>
       {#if filePath}
-        <span class="db-sep">·</span>
-        <span class="db-filepath" title={filePath}>{filePath}</span>
+        <span class="db-sep" aria-hidden="true">·</span>
+        <span class="db-filepath-chip" title={filePath}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          {fileName}
+        </span>
       {/if}
     </div>
     <div class="db-actions">
@@ -58,14 +78,20 @@
   <!-- Diff body -->
   {#if diffLines.length}
     <div class="db-diff" role="region" aria-label="File diff">
-      {#each diffLines as line}
-        <div class="db-line db-{line.type}">
-          <span class="db-gutter" aria-hidden="true">
-            {line.type === "add" ? "+" : line.type === "del" ? "-" : " "}
-          </span>
-          <span class="db-text">{line.text.slice(1)}</span>
-        </div>
-      {/each}
+      <div class="db-diff-inner">
+        {#each diffLines as line}
+          <div class="db-line db-{line.type}">
+            <span class="db-gutter" aria-hidden="true">
+              <span class="db-gutter-old">{line.oldLine ?? ""}</span>
+              <span class="db-gutter-new">{line.newLine ?? ""}</span>
+            </span>
+            <span class="db-sigil" aria-hidden="true">
+              {line.type === "add" ? "+" : line.type === "del" ? "-" : " "}
+            </span>
+            <span class="db-text">{line.text}</span>
+          </div>
+        {/each}
+      </div>
     </div>
   {:else}
     <div class="db-no-diff">No preview available</div>
@@ -74,7 +100,7 @@
 
 <style>
   .db-root {
-    background: var(--background-primary-alt);
+    background: var(--background-primary);
     border-bottom: 1px solid var(--background-modifier-border);
   }
 
@@ -83,17 +109,21 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 10px;
+    padding: 8px 10px;
     gap: 8px;
     flex-wrap: wrap;
+    background: var(--background-secondary);
   }
   .db-header-left {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     min-width: 0;
-    color: var(--text-muted);
     font-size: 12px;
+  }
+  .db-tool-icon {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
   }
   .db-tool-name {
     font-weight: 600;
@@ -101,10 +131,17 @@
     text-transform: capitalize;
   }
   .db-sep { color: var(--text-faint); }
-  .db-filepath {
+  .db-filepath-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-family: var(--font-monospace);
     font-size: 11px;
     color: var(--text-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+    padding: 1px 7px;
+    border-radius: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -117,65 +154,100 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 9px;
-    border-radius: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 500;
     cursor: pointer;
-    border: 1px solid;
-    background: transparent;
-    transition: background 150ms, color 150ms;
+    transition: background 150ms, transform 100ms;
     white-space: nowrap;
   }
+  .db-btn:active { transform: scale(0.96); }
   .db-btn:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 1px; }
   .db-approve {
-    border-color: var(--color-green, #48bb78);
+    background: color-mix(in srgb, var(--color-green, #48bb78) 18%, transparent);
+    border: 1px solid var(--color-green, #48bb78);
     color: var(--color-green, #48bb78);
   }
-  .db-approve:hover { background: color-mix(in srgb, var(--color-green, #48bb78) 15%, transparent); }
+  .db-approve:hover { background: color-mix(in srgb, var(--color-green, #48bb78) 28%, transparent); }
   .db-reject {
-    border-color: var(--color-red, #e53e3e);
+    background: transparent;
+    border: 1px solid var(--color-red, #e53e3e);
     color: var(--color-red, #e53e3e);
   }
   .db-reject:hover { background: color-mix(in srgb, var(--color-red, #e53e3e) 15%, transparent); }
 
   /* Diff display */
   .db-diff {
+    border-top: 1px solid var(--background-modifier-border);
+    overflow-y: auto;
+    max-height: 300px;
+  }
+  .db-diff-inner {
     font-family: var(--font-monospace);
     font-size: 11.5px;
-    line-height: 1.5;
+    line-height: 1.55;
     overflow-x: auto;
-    overflow-y: auto;
-    max-height: 280px;
-    border-top: 1px solid var(--background-modifier-border);
   }
   .db-line {
     display: flex;
+    align-items: stretch;
     min-width: 0;
-    padding: 0 10px;
     white-space: pre;
+    border-left: 3px solid transparent;
   }
   .db-add {
-    background: color-mix(in srgb, var(--color-green, #48bb78) 12%, transparent);
-    color: var(--color-green, #48bb78);
+    background: color-mix(in srgb, var(--color-green, #48bb78) 10%, transparent);
+    border-left-color: var(--color-green, #48bb78);
   }
   .db-del {
-    background: color-mix(in srgb, var(--color-red, #e53e3e) 12%, transparent);
-    color: var(--color-red, #e53e3e);
+    background: color-mix(in srgb, var(--color-red, #e53e3e) 10%, transparent);
+    border-left-color: var(--color-red, #e53e3e);
   }
   .db-ctx { color: var(--text-muted); }
+  .db-add .db-text { color: var(--color-green, #48bb78); }
+  .db-del .db-text { color: var(--color-red, #e53e3e); }
+
+  /* Gutter (old + new line numbers) */
   .db-gutter {
-    width: 14px;
-    flex-shrink: 0;
+    display: flex;
+    gap: 0;
     user-select: none;
-    opacity: 0.7;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--background-secondary) 60%, transparent);
+    border-right: 1px solid var(--background-modifier-border);
   }
-  .db-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .db-gutter-old, .db-gutter-new {
+    width: 32px;
+    text-align: right;
+    padding: 0 6px;
+    font-size: 10px;
+    color: var(--text-faint);
+    line-height: inherit;
+  }
+  .db-gutter-old { border-right: 1px solid var(--background-modifier-border); }
+  .db-sigil {
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    padding: 0 2px;
+    opacity: 0.8;
+  }
+  .db-add .db-sigil { color: var(--color-green, #48bb78); }
+  .db-del .db-sigil { color: var(--color-red, #e53e3e); }
+  .db-text {
+    flex: 1;
+    min-width: 0;
+    padding: 0 10px 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .db-no-diff {
-    padding: 8px 12px;
+    padding: 10px 14px;
     font-size: 12px;
     color: var(--text-faint);
     border-top: 1px solid var(--background-modifier-border);
+    font-style: italic;
   }
 </style>
