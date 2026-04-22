@@ -1,4 +1,4 @@
-import type { Delta, Message } from "../types";
+import type { Message } from "../types";
 import type { LLMProvider } from "../providers/types";
 import type { Tool } from "../tools/types";
 import { PENDING_PREFIX } from "../tools/write";
