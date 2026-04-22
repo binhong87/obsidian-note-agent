@@ -1,0 +1,21 @@
+{
+  "chat.send": "Send",
+  "chat.cancel": "Cancel",
+  "chat.new": "New chat",
+  "chat.mode.ask": "Ask",
+  "chat.mode.edit": "Edit",
+  "diff.approve": "Approve",
+  "diff.reject": "Reject",
+  "diff.applyAll": "Apply All",
+  "diff.rejectAll": "Reject All",
+  "summary.created": "{{count}} created",
+  "summary.edited": "{{count}} edited",
+  "summary.deleted": "{{count}} deleted",
+  "error.auth": "Authentication failed. Check Settings.",
+  "error.rate": "Rate limit. Retry in a moment.",
+  "error.context": "Context too large. Older messages summarized.",
+  "prompt.system.ask": "You are a knowledge-base assistant. Use tools to search and read notes. Cite note paths.",
+  "prompt.system.edit": "You are a knowledge-base assistant with editing abilities. All writes require user approval. Produce minimal diffs.",
+  "prompt.scheduled.daily": "Summarize notes modified today. Produce one new note with headings per topic and links back.",
+  "prompt.scheduled.weekly": "Produce a weekly review of the past 7 days. Highlight themes and open loops in one new note."
+}

@@ -1,0 +1,21 @@
+{
+  "chat.send": "发送",
+  "chat.cancel": "取消",
+  "chat.new": "新对话",
+  "chat.mode.ask": "提问",
+  "chat.mode.edit": "编辑",
+  "diff.approve": "批准",
+  "diff.reject": "拒绝",
+  "diff.applyAll": "全部应用",
+  "diff.rejectAll": "全部拒绝",
+  "summary.created": "新建 {{count}} 篇",
+  "summary.edited": "修改 {{count}} 篇",
+  "summary.deleted": "删除 {{count}} 篇",
+  "error.auth": "身份验证失败，请检查设置。",
+  "error.rate": "触发速率限制，请稍后重试。",
+  "error.context": "上下文过长，已对较早消息进行摘要。",
+  "prompt.system.ask": "你是一位知识库助手。使用工具搜索和阅读笔记，并在相关处引用笔记路径。",
+  "prompt.system.edit": "你是一位具备编辑能力的知识库助手。所有写入都需要用户批准，请生成最小必要的改动。",
+  "prompt.scheduled.daily": "总结今天修改过的笔记，生成一篇新笔记，按主题分小节并链接回源笔记。",
+  "prompt.scheduled.weekly": "回顾最近 7 天的笔记，提炼主题与未完成事项，生成一篇新的周回顾笔记。"
+}
