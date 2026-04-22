@@ -36,16 +36,23 @@ export class AgentLoop {
   }
 
   async *run(): AsyncIterable<LoopEvent> {
-    const { provider, conversation, tools, approvalQueue, systemPrompt, maxIterations, historyBudget } = this.opts;
+    const { provider, conversation, tools, approvalQueue, systemPrompt, maxIterations, historyBudget, turnTimeoutMs } = this.opts;
     for (let i = 0; i < maxIterations; i++) {
+      if (this.abort.signal.aborted) { yield { type: "stopped", reason: "cancelled" }; return; }
       const withSys: Message[] = [{ role: "system", content: systemPrompt }, ...conversation.messages];
       const trimmed = trimHistory(withSys, historyBudget);
       const assistantMsg: Message = { role: "assistant", content: "", toolCalls: [] };
       let stoppedEarly = false;
+
+      // Per-iteration abort that fires on either outer cancel or turn timeout.
+      const iterAbort = new AbortController();
+      const propagate = () => iterAbort.abort();
+      this.abort.signal.addEventListener("abort", propagate, { once: true });
+      const timer = setTimeout(() => iterAbort.abort(), turnTimeoutMs);
       try {
         for await (const d of provider.chat({
           model: conversation.model, messages: trimmed,
-          tools: tools.map(t => t.schema), signal: this.abort.signal,
+          tools: tools.map(t => t.schema), signal: iterAbort.signal,
         })) {
           if (d.type === "text" && d.text) { assistantMsg.content += d.text; yield { type: "text", text: d.text }; }
           else if (d.type === "tool_call" && d.toolCall) { assistantMsg.toolCalls!.push(d.toolCall); }
@@ -55,6 +62,9 @@ export class AgentLoop {
       } catch (e: any) {
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;
+      } finally {
+        clearTimeout(timer);
+        this.abort.signal.removeEventListener("abort", propagate);
       }
       if (stoppedEarly) return;
       conversation.append(assistantMsg);

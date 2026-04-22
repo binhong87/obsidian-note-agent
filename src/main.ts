@@ -13,6 +13,7 @@ import { systemPromptKey } from "./agent/mode-gate";
 import { AgentSettingsTab } from "./ui/SettingsTab";
 import { AgentChatView, VIEW_TYPE_AGENT_CHAT } from "./ui/chat-view";
 import { StatusBar } from "./ui/status-bar";
+import { applyUnifiedPatch } from "./utils/patch";
 
 export default class ObsidianAgentPlugin extends Plugin {
   settings!: Settings;
@@ -173,8 +174,4 @@ function simpleDiff(a: string, b: string): string {
     else { if (al[i] !== undefined) out.push("- " + al[i]); if (bl[i] !== undefined) out.push("+ " + bl[i]); }
   }
   return out.join("\n");
-}
-
-function applyUnifiedPatch(original: string, _patch: string): string {
-  return original;
 }
