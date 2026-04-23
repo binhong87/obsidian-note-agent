@@ -162,9 +162,9 @@
     margin-left: 2px;
     vertical-align: text-bottom;
     border-radius: 1px;
-    animation: blink 1s step-end infinite;
+    animation: ml-blink 1s step-end infinite;
   }
-  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes ml-blink { 50% { opacity: 0; } }
 
   /* ── Tool result indicator ── */
   .ml-tool-result {
@@ -275,7 +275,7 @@
     background: var(--background-primary);
     color: var(--text-normal);
   }
-  .ml-turn-agent .ml-content :global(pre code) {
+  .ml-turn-agent .ml-content :global(pre) :global(code) {
     font-family: var(--font-monospace);
     font-size: 12px;
     line-height: 1.6;
