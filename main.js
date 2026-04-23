@@ -5179,7 +5179,7 @@ function create_fragment6(ctx) {
       attr(textarea_1, "placeholder", textarea_1_placeholder_value = /*busy*/
       ctx[3] ? "" : (
         /*t*/
-        ctx[17]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
+        ctx[17]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
       ));
       textarea_1.disabled = /*busy*/
       ctx[3];
@@ -5353,7 +5353,7 @@ function create_fragment6(ctx) {
       8 && textarea_1_placeholder_value !== (textarea_1_placeholder_value = /*busy*/
       ctx2[3] ? "" : (
         /*t*/
-        ctx2[17]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
+        ctx2[17]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
       ))) {
         attr(textarea_1, "placeholder", textarea_1_placeholder_value);
       }
@@ -5494,7 +5494,7 @@ function instance6($$self, $$props, $$invalidate) {
     $$invalidate(8, showHistory = false);
   }
   function onKeydown(e) {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }

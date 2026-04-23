@@ -67,7 +67,7 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
   const t = (k: string, v?: any) => plugin.i18n.t(k, v);
@@ -118,7 +118,7 @@
       <textarea
         bind:this={textarea}
         bind:value={input}
-        placeholder={busy ? "" : t("chat.placeholder") || "Ask anything… (Ctrl+Enter)"}
+        placeholder={busy ? "" : t("chat.placeholder") || "Ask anything… (Shift+Enter for newline)"}
         disabled={busy}
         rows="1"
         on:input={autoResize}
