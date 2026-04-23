@@ -39,22 +39,18 @@
 
   {#each messages as m (m)}
     {#if m.role === "user"}
-      <div class="ml-msg ml-user">
-        <div class="ml-bubble ml-bubble-user">{m.content}</div>
-        <div class="ml-avatar ml-avatar-user" aria-hidden="true">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
-        </div>
+      <div class="ml-turn ml-turn-user">
+        <div class="ml-name ml-name-user">You</div>
+        <div class="ml-content">{m.content}</div>
       </div>
 
     {:else if m.role === "assistant"}
-      <div class="ml-msg ml-assistant" class:ml-error={isError(m.content)}>
-        <div class="ml-avatar ml-avatar-bot" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
+      <div class="ml-turn ml-turn-agent" class:ml-error={isError(m.content)}>
+        <div class="ml-name ml-name-agent">Agent</div>
         {#if isError(m.content)}
-          <div class="ml-bubble ml-bubble-bot ml-bubble-error">{m.content}</div>
+          <div class="ml-content ml-content-error">{m.content}</div>
         {:else}
-          <div class="ml-bubble ml-bubble-bot" use:markdown={{ text: m.content, plugin }}></div>
+          <div class="ml-content" use:markdown={{ text: m.content, plugin }}></div>
         {/if}
       </div>
 
@@ -66,19 +62,13 @@
     {/if}
   {/each}
 
-  <!-- Streaming (plain text — no markdown flicker during generation) -->
   {#if streamBuf}
-    <div class="ml-msg ml-assistant">
-      <div class="ml-avatar ml-avatar-bot" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      </div>
-      <div class="ml-bubble ml-bubble-bot ml-streaming">
-        {streamBuf}<span class="ml-cursor" aria-hidden="true"></span>
-      </div>
+    <div class="ml-turn ml-turn-agent">
+      <div class="ml-name ml-name-agent">Agent</div>
+      <div class="ml-content ml-streaming">{streamBuf}<span class="ml-cursor" aria-hidden="true"></span></div>
     </div>
   {/if}
 
-  <!-- Pending writes -->
   {#if pending.length}
     <div class="ml-pending-group">
       {#each pending as p (p.toolCallId)}
@@ -104,8 +94,6 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 12px 0 4px;
     scroll-behavior: smooth;
   }
 
@@ -130,77 +118,41 @@
   .ml-empty-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-normal); }
   .ml-empty-hint { margin: 0; font-size: 12px; color: var(--text-faint); max-width: 220px; line-height: 1.6; }
 
-  /* ── Message rows ── */
-  .ml-msg {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 3px 12px;
-    animation: ml-fadein 180ms ease-out both;
+  /* ── Alternating bands ── */
+  .ml-turn {
+    padding: 10px 13px;
+    border-bottom: 1px solid var(--background-modifier-border);
   }
-  @keyframes ml-fadein {
-    from { opacity: 0; transform: translateY(5px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .ml-turn-user {
+    background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary));
   }
-  @media (prefers-reduced-motion: reduce) { .ml-msg { animation: none; } }
-
-  .ml-user { flex-direction: row-reverse; }
-
-  /* ── Avatars ── */
-  .ml-avatar {
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+  .ml-turn-agent {
+    background: var(--background-primary);
   }
-  .ml-avatar-user {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent, #fff);
-  }
-  .ml-avatar-bot {
-    background: var(--background-secondary);
-    color: var(--interactive-accent);
-    border: 1px solid var(--background-modifier-border);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+  .ml-error.ml-turn-agent {
+    background: color-mix(in srgb, var(--color-red, #e53e3e) 5%, var(--background-primary));
   }
 
-  /* ── Bubbles ── */
-  .ml-bubble {
+  /* ── Name labels ── */
+  .ml-name {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+  }
+  .ml-name-user { color: var(--text-muted); }
+  .ml-name-agent { color: var(--interactive-accent); }
+
+  /* ── Content ── */
+  .ml-content {
     font-size: var(--font-ui-small, 13px);
     line-height: 1.65;
-    word-break: break-word;
-    min-width: 0;
-  }
-  .ml-bubble-user {
-    background: linear-gradient(
-      135deg,
-      var(--interactive-accent),
-      color-mix(in srgb, var(--interactive-accent) 72%, #000)
-    );
-    color: var(--text-on-accent, #fff);
-    border-radius: 16px 16px 4px 16px;
-    padding: 9px 13px;
-    max-width: 78%;
-    white-space: pre-wrap;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
-  }
-  .ml-bubble-bot {
-    background: var(--background-primary-alt);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px 16px 16px 16px;
-    padding: 10px 14px;
-    max-width: 88%;
     color: var(--text-normal);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    word-break: break-word;
   }
-
-  /* Error state */
-  .ml-error .ml-avatar-bot {
-    background: color-mix(in srgb, var(--color-red, #e53e3e) 15%, transparent);
-    color: var(--color-red, #e53e3e);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red, #e53e3e) 15%, transparent);
-  }
-  .ml-bubble-error { color: var(--text-error, #e53e3e) !important; white-space: pre-wrap; }
+  .ml-turn-user .ml-content { white-space: pre-wrap; }
+  .ml-content-error { color: var(--color-red, #e53e3e) !important; white-space: pre-wrap; }
 
   /* Streaming */
   .ml-streaming { white-space: pre-wrap; }
@@ -217,7 +169,9 @@
   /* ── Tool result indicator ── */
   .ml-tool-result {
     display: flex; align-items: center; gap: 5px;
-    padding: 2px 12px 2px 46px;
+    padding: 3px 13px;
+    background: var(--background-primary);
+    border-bottom: 1px solid var(--background-modifier-border);
     color: var(--text-faint);
     font-size: 11px;
   }
@@ -257,27 +211,27 @@
   }
   .ml-bulk-reject:hover { background: color-mix(in srgb, var(--color-red, #e53e3e) 15%, transparent); }
 
-  /* ── Markdown content styles (rendered inside .ml-bubble-bot) ── */
-  .ml-bubble-bot :global(p) { margin: 0 0 8px; }
-  .ml-bubble-bot :global(p:last-child) { margin-bottom: 0; }
-  .ml-bubble-bot :global(h1) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1.2em; }
-  .ml-bubble-bot :global(h2) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1.1em; }
-  .ml-bubble-bot :global(h3) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
-  .ml-bubble-bot :global(h4) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
-  .ml-bubble-bot :global(h5) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
-  .ml-bubble-bot :global(h6) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
-  .ml-bubble-bot :global(ul) { padding-left: 20px; margin: 4px 0 8px; }
-  .ml-bubble-bot :global(ol) { padding-left: 20px; margin: 4px 0 8px; }
-  .ml-bubble-bot :global(li) { margin: 3px 0; }
-  .ml-bubble-bot :global(li:last-child) { margin-bottom: 0; }
-  .ml-bubble-bot :global(blockquote) {
+  /* ── Markdown content (rendered inside agent turns) ── */
+  .ml-turn-agent .ml-content :global(p) { margin: 0 0 8px; }
+  .ml-turn-agent .ml-content :global(p:last-child) { margin-bottom: 0; }
+  .ml-turn-agent .ml-content :global(h1) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1.2em; }
+  .ml-turn-agent .ml-content :global(h2) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1.1em; }
+  .ml-turn-agent .ml-content :global(h3) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
+  .ml-turn-agent .ml-content :global(h4) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
+  .ml-turn-agent .ml-content :global(h5) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
+  .ml-turn-agent .ml-content :global(h6) { margin: 14px 0 5px; font-weight: 600; color: var(--text-normal); line-height: 1.3; font-size: 1em; }
+  .ml-turn-agent .ml-content :global(ul) { padding-left: 20px; margin: 4px 0 8px; }
+  .ml-turn-agent .ml-content :global(ol) { padding-left: 20px; margin: 4px 0 8px; }
+  .ml-turn-agent .ml-content :global(li) { margin: 3px 0; }
+  .ml-turn-agent .ml-content :global(li:last-child) { margin-bottom: 0; }
+  .ml-turn-agent .ml-content :global(blockquote) {
     border-left: 3px solid var(--interactive-accent);
     margin: 8px 0; padding: 5px 12px;
     color: var(--text-muted);
     background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
     border-radius: 0 6px 6px 0;
   }
-  .ml-bubble-bot :global(code:not(pre code)) {
+  .ml-turn-agent .ml-content :global(code:not(pre code)) {
     font-family: var(--font-monospace);
     font-size: 0.88em;
     background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
@@ -285,64 +239,71 @@
     padding: 1px 5px;
     border-radius: 4px;
   }
-  .ml-bubble-bot :global(pre) {
-    position: relative;
+  .ml-turn-agent .ml-content :global(pre) {
     margin: 8px 0;
-    border-radius: 8px;
+    border-radius: 7px;
     overflow: hidden;
-    background: var(--code-background, var(--background-secondary)) !important;
-    border: 1px solid var(--background-modifier-border);
+    border: 1px solid color-mix(in srgb, var(--interactive-accent) 20%, var(--background-modifier-border));
   }
-  .ml-bubble-bot :global(pre code) {
+  .ml-turn-agent .ml-content :global(.ob-code-header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-secondary));
+    border-bottom: 1px solid color-mix(in srgb, var(--interactive-accent) 15%, var(--background-modifier-border));
+  }
+  .ml-turn-agent .ml-content :global(.ob-code-lang) {
+    font-family: var(--font-monospace);
+    font-size: 10px;
+    color: var(--interactive-accent);
+    letter-spacing: 0.02em;
+  }
+  .ml-turn-agent .ml-content :global(.ob-copy-btn) {
+    font-size: 10px;
+    font-weight: 500;
+    font-family: var(--font-interface);
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 1px 7px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+  }
+  .ml-turn-agent .ml-content :global(.ob-copy-btn:hover) {
+    background: var(--background-primary);
+    color: var(--text-normal);
+  }
+  .ml-turn-agent .ml-content :global(pre code) {
     font-family: var(--font-monospace);
     font-size: 12px;
     line-height: 1.6;
     display: block;
-    padding: 12px 14px;
+    padding: 10px 12px;
     overflow-x: auto;
-    background: transparent !important;
+    background: color-mix(in srgb, var(--interactive-accent) 4%, var(--background-secondary)) !important;
   }
-  /* Copy button */
-  .ml-bubble-bot :global(.ob-copy-btn) {
-    position: absolute;
-    top: 6px; right: 6px;
-    padding: 2px 8px;
-    font-size: 10px; font-weight: 500;
-    font-family: var(--font-interface);
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    color: var(--text-muted);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 150ms, background 150ms;
-  }
-  .ml-bubble-bot :global(pre:hover .ob-copy-btn) { opacity: 1; }
-  .ml-bubble-bot :global(.ob-copy-btn:hover) {
-    background: var(--background-secondary);
-    color: var(--text-normal);
-  }
-  /* Tables */
-  .ml-bubble-bot :global(table) {
+  .ml-turn-agent .ml-content :global(table) {
     border-collapse: collapse;
     width: 100%; margin: 8px 0; font-size: 12px;
   }
-  .ml-bubble-bot :global(th) {
+  .ml-turn-agent .ml-content :global(th) {
     border: 1px solid var(--background-modifier-border);
     padding: 5px 10px; text-align: left;
     background: var(--background-secondary); font-weight: 600;
   }
-  .ml-bubble-bot :global(td) {
+  .ml-turn-agent .ml-content :global(td) {
     border: 1px solid var(--background-modifier-border);
     padding: 5px 10px; text-align: left;
   }
-  .ml-bubble-bot :global(a) { color: var(--text-accent); text-decoration: none; }
-  .ml-bubble-bot :global(a:hover) { text-decoration: underline; }
-  .ml-bubble-bot :global(hr) {
+  .ml-turn-agent .ml-content :global(a) { color: var(--text-accent); text-decoration: none; }
+  .ml-turn-agent .ml-content :global(a:hover) { text-decoration: underline; }
+  .ml-turn-agent .ml-content :global(hr) {
     border: none;
     border-top: 1px solid var(--background-modifier-border);
     margin: 10px 0;
   }
-  .ml-bubble-bot :global(strong) { font-weight: 600; }
-  .ml-bubble-bot :global(em) { font-style: italic; color: var(--text-muted); }
+  .ml-turn-agent .ml-content :global(strong) { font-weight: 600; }
+  .ml-turn-agent .ml-content :global(em) { font-style: italic; color: var(--text-muted); }
 </style>
