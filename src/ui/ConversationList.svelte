@@ -16,9 +16,7 @@
     dispatch("select");
   }
 
-  async function startNew() {
-    await plugin.startNewConversation();
-    active = plugin.currentConversation?.path ?? "";
+  function startNew() {
     dispatch("newChat");
   }
 
@@ -73,7 +71,7 @@
       if (b === "Older") return -1;
       return b.localeCompare(a);
     });
-    return entries.map(([lbl, ps]) => ({ label: lbl, paths: ps }));
+    return entries.map(([lbl, items]) => ({ label: lbl, paths: items }));
   }
 
   $: groups = groupPaths(paths);
@@ -86,6 +84,7 @@
     {#each groups as group (group.label)}
       <div class="cl-section-label">{group.label}</div>
       {#each group.paths as p (p)}
+        {@const d = rowDate(p, group.label)}
         <button
           class="cl-item"
           class:cl-active={p === active}
@@ -95,9 +94,7 @@
         >
           <svg class="cl-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span class="cl-label">{label(p)}</span>
-          {#if rowDate(p, group.label)}
-            <span class="cl-date">{rowDate(p, group.label)}</span>
-          {/if}
+          {#if d}<span class="cl-date">{d}</span>{/if}
         </button>
       {/each}
     {/each}
