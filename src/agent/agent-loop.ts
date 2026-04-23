@@ -61,6 +61,10 @@ export class AgentLoop {
           else if (d.type === "done") break;
         }
       } catch (e: any) {
+        if (this.abort.signal.aborted || (e instanceof DOMException && e.name === "AbortError")) {
+          yield { type: "stopped", reason: "cancelled" };
+          return;
+        }
         console.error("[agent] chat exception:", e);
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;

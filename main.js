@@ -397,45 +397,76 @@ var ProviderError = class extends Error {
 };
 
 // src/providers/http.ts
-async function* httpSSE(o) {
-  const resp = await fetch(o.url, {
-    method: o.method ?? "POST",
-    headers: o.headers,
-    body: o.body,
-    signal: o.signal
+var MAX_RETRIES = 4;
+function retryDelayMs(attempt, retryAfterHeader) {
+  if (retryAfterHeader) {
+    const secs = parseInt(retryAfterHeader, 10);
+    if (!isNaN(secs))
+      return Math.min(secs * 1e3, 6e4);
+  }
+  return Math.min(5e3 * Math.pow(2, attempt - 1), 6e4);
+}
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(t);
+      reject(new DOMException("Aborted", "AbortError"));
+    }, { once: true });
   });
-  if (resp.status === 401 || resp.status === 403)
-    throw new ProviderError("auth", `${resp.status}`);
-  if (resp.status === 429) {
-    const raw = await resp.text();
-    let msg = raw;
-    try {
-      msg = JSON.parse(raw)?.error?.message ?? raw;
-    } catch {
-    }
-    throw new ProviderError("rate", `Rate limited: ${msg}`);
+}
+function parseRateMsg(raw) {
+  try {
+    return JSON.parse(raw)?.error?.message ?? raw;
+  } catch {
+    return raw;
   }
-  if (resp.status >= 400) {
-    const t = await resp.text();
-    if (/context|too long/i.test(t))
-      throw new ProviderError("context", t);
-    throw new ProviderError("unknown", `${resp.status}: ${t}`);
-  }
-  const reader = resp.body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done)
-      break;
-    buf += dec.decode(value, { stream: true });
-    let idx;
-    while ((idx = buf.indexOf("\n\n")) >= 0) {
-      const evt = buf.slice(0, idx);
-      buf = buf.slice(idx + 2);
-      for (const ev of parseSSE(evt + "\n\n"))
-        yield ev;
+}
+async function* httpSSE(o) {
+  for (let attempt = 0; ; attempt++) {
+    const resp = await fetch(o.url, {
+      method: o.method ?? "POST",
+      headers: o.headers,
+      body: o.body,
+      signal: o.signal
+    });
+    if (resp.status === 429 && attempt < MAX_RETRIES) {
+      const delay = retryDelayMs(attempt + 1, resp.headers.get("Retry-After"));
+      console.warn(`[agent] rate limited, retrying in ${delay / 1e3}s (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await sleep(delay, o.signal);
+      continue;
     }
+    if (resp.status === 401 || resp.status === 403)
+      throw new ProviderError("auth", `${resp.status}`);
+    if (resp.status === 429)
+      throw new ProviderError("rate", `Rate limited (gave up after ${MAX_RETRIES} retries): ${parseRateMsg(await resp.text())}`);
+    if (resp.status >= 400) {
+      const t = await resp.text();
+      if (/context|too long/i.test(t))
+        throw new ProviderError("context", t);
+      throw new ProviderError("unknown", `${resp.status}: ${t}`);
+    }
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done)
+        break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf("\n\n")) >= 0) {
+        const evt = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        for (const ev of parseSSE(evt + "\n\n"))
+          yield ev;
+      }
+    }
+    return;
   }
 }
 function* parseSSE(text2) {
@@ -1040,6 +1071,10 @@ var AgentLoop = class {
             break;
         }
       } catch (e) {
+        if (this.abort.signal.aborted || e instanceof DOMException && e.name === "AbortError") {
+          yield { type: "stopped", reason: "cancelled" };
+          return;
+        }
         console.error("[agent] chat exception:", e);
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;
