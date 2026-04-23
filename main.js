@@ -1301,6 +1301,9 @@ function set_input_value(input, value) {
 function toggle_class(element2, name, toggle) {
   element2.classList.toggle(name, !!toggle);
 }
+function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
+  return new CustomEvent(type, { detail, bubbles, cancelable });
+}
 function get_custom_elements_slots(element2) {
   const result = {};
   element2.childNodes.forEach(
@@ -1330,6 +1333,25 @@ function afterUpdate(fn) {
 }
 function onDestroy(fn) {
   get_current_component().$$.on_destroy.push(fn);
+}
+function createEventDispatcher() {
+  const component = get_current_component();
+  return (type, detail, { cancelable = false } = {}) => {
+    const callbacks = component.$$.callbacks[type];
+    if (callbacks) {
+      const event = custom_event(
+        /** @type {string} */
+        type,
+        detail,
+        { cancelable }
+      );
+      callbacks.slice().forEach((fn) => {
+        fn.call(component, event);
+      });
+      return !event.defaultPrevented;
+    }
+    return true;
+  };
 }
 
 // node_modules/svelte/src/runtime/internal/scheduler.js
@@ -2911,25 +2933,39 @@ function markdown(node, params) {
     await import_obsidian4.MarkdownRenderer.render(p.plugin.app, p.text, node, "", owner);
     if (v !== version)
       return;
-    node.querySelectorAll("pre").forEach(injectCopyButton);
+    node.querySelectorAll("pre").forEach(injectCodeHeader);
   }
-  function injectCopyButton(pre) {
-    if (pre.querySelector(".ob-copy-btn"))
+  function injectCodeHeader(pre) {
+    if (pre.querySelector(".ob-code-header"))
       return;
+    const code = pre.querySelector("code");
+    const lang = code?.className.match(/language-(\S+)/)?.[1] ?? "";
+    const header = document.createElement("div");
+    header.className = "ob-code-header";
+    const langLabel = document.createElement("span");
+    langLabel.className = "ob-code-lang";
+    langLabel.textContent = lang;
     const btn = document.createElement("button");
     btn.className = "ob-copy-btn";
     btn.textContent = "Copy";
     btn.setAttribute("aria-label", "Copy code");
     btn.addEventListener("click", () => {
-      const code = (pre.querySelector("code") ?? pre).textContent ?? "";
-      navigator.clipboard.writeText(code).then(() => {
+      const text2 = (code ?? pre).textContent ?? "";
+      navigator.clipboard.writeText(text2).then(() => {
         btn.textContent = "\u2713 Copied";
+        setTimeout(() => {
+          btn.textContent = "Copy";
+        }, 2e3);
+      }).catch(() => {
+        btn.textContent = "Failed";
         setTimeout(() => {
           btn.textContent = "Copy";
         }, 2e3);
       });
     });
-    pre.appendChild(btn);
+    header.appendChild(langLabel);
+    header.appendChild(btn);
+    pre.insertBefore(header, pre.firstChild);
   }
   render(params);
   return {
@@ -2958,8 +2994,8 @@ function create_if_block_6(ctx) {
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-186qrb5" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-186qrb5">Start a conversation</p> <p class="ml-empty-hint svelte-186qrb5">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
-      attr(div1, "class", "ml-empty svelte-186qrb5");
+      div1.innerHTML = `<div class="ml-empty-icon svelte-1elwqoj" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-1elwqoj">Start a conversation</p> <p class="ml-empty-hint svelte-1elwqoj">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      attr(div1, "class", "ml-empty svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -2976,8 +3012,8 @@ function create_if_block_5(ctx) {
   return {
     c() {
       div = element("div");
-      div.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> <span class="ml-tool-label svelte-186qrb5">tool result</span> `;
-      attr(div, "class", "ml-tool-result svelte-186qrb5");
+      div.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> <span class="ml-tool-label svelte-1elwqoj">tool result</span>`;
+      attr(div, "class", "ml-tool-result svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -2993,9 +3029,8 @@ function create_if_block_5(ctx) {
 function create_if_block_32(ctx) {
   let div1;
   let div0;
-  let t0;
-  let show_if;
   let t1;
+  let show_if;
   function select_block_type_1(ctx2, dirty) {
     if (dirty & /*messages*/
     1)
@@ -3015,13 +3050,11 @@ function create_if_block_32(ctx) {
     c() {
       div1 = element("div");
       div0 = element("div");
-      div0.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
-      t0 = space();
-      if_block.c();
+      div0.textContent = "Agent";
       t1 = space();
-      attr(div0, "class", "ml-avatar ml-avatar-bot svelte-186qrb5");
-      attr(div0, "aria-hidden", "true");
-      attr(div1, "class", "ml-msg ml-assistant svelte-186qrb5");
+      if_block.c();
+      attr(div0, "class", "ml-name ml-name-agent svelte-1elwqoj");
+      attr(div1, "class", "ml-turn ml-turn-agent svelte-1elwqoj");
       toggle_class(div1, "ml-error", isError(
         /*m*/
         ctx[13].content
@@ -3030,9 +3063,8 @@ function create_if_block_32(ctx) {
     m(target, anchor) {
       insert(target, div1, anchor);
       append(div1, div0);
-      append(div1, t0);
-      if_block.m(div1, null);
       append(div1, t1);
+      if_block.m(div1, null);
     },
     p(ctx2, dirty) {
       if (current_block_type === (current_block_type = select_block_type_1(ctx2, dirty)) && if_block) {
@@ -3042,7 +3074,7 @@ function create_if_block_32(ctx) {
         if_block = current_block_type(ctx2);
         if (if_block) {
           if_block.c();
-          if_block.m(div1, t1);
+          if_block.m(div1, null);
         }
       }
       if (dirty & /*isError, messages*/
@@ -3064,41 +3096,37 @@ function create_if_block_32(ctx) {
 function create_if_block_22(ctx) {
   let div2;
   let div0;
-  let t0_value = (
+  let t1;
+  let div1;
+  let t2_value = (
     /*m*/
     ctx[13].content + ""
   );
-  let t0;
-  let t1;
-  let div1;
   let t2;
   return {
     c() {
       div2 = element("div");
       div0 = element("div");
-      t0 = text(t0_value);
+      div0.textContent = "You";
       t1 = space();
       div1 = element("div");
-      div1.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"></path></svg>`;
-      t2 = space();
-      attr(div0, "class", "ml-bubble ml-bubble-user svelte-186qrb5");
-      attr(div1, "class", "ml-avatar ml-avatar-user svelte-186qrb5");
-      attr(div1, "aria-hidden", "true");
-      attr(div2, "class", "ml-msg ml-user svelte-186qrb5");
+      t2 = text(t2_value);
+      attr(div0, "class", "ml-name ml-name-user svelte-1elwqoj");
+      attr(div1, "class", "ml-content svelte-1elwqoj");
+      attr(div2, "class", "ml-turn ml-turn-user svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
-      append(div0, t0);
       append(div2, t1);
       append(div2, div1);
-      append(div2, t2);
+      append(div1, t2);
     },
     p(ctx2, dirty) {
       if (dirty & /*messages*/
-      1 && t0_value !== (t0_value = /*m*/
+      1 && t2_value !== (t2_value = /*m*/
       ctx2[13].content + ""))
-        set_data(t0, t0_value);
+        set_data(t2, t2_value);
     },
     d(detaching) {
       if (detaching) {
@@ -3115,7 +3143,7 @@ function create_else_block2(ctx) {
   return {
     c() {
       div = element("div");
-      attr(div, "class", "ml-bubble ml-bubble-bot svelte-186qrb5");
+      attr(div, "class", "ml-content svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3168,7 +3196,7 @@ function create_if_block_4(ctx) {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "ml-bubble ml-bubble-bot ml-bubble-error svelte-186qrb5");
+      attr(div, "class", "ml-content ml-content-error svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3253,42 +3281,41 @@ function create_each_block_1(key_1, ctx) {
 function create_if_block_13(ctx) {
   let div2;
   let div0;
-  let t0;
-  let div1;
   let t1;
+  let div1;
+  let t2;
   let span;
   return {
     c() {
       div2 = element("div");
       div0 = element("div");
-      div0.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
-      t0 = space();
+      div0.textContent = "Agent";
+      t1 = space();
       div1 = element("div");
-      t1 = text(
+      t2 = text(
         /*streamBuf*/
         ctx[1]
       );
       span = element("span");
-      attr(div0, "class", "ml-avatar ml-avatar-bot svelte-186qrb5");
-      attr(div0, "aria-hidden", "true");
-      attr(span, "class", "ml-cursor svelte-186qrb5");
+      attr(div0, "class", "ml-name ml-name-agent svelte-1elwqoj");
+      attr(span, "class", "ml-cursor svelte-1elwqoj");
       attr(span, "aria-hidden", "true");
-      attr(div1, "class", "ml-bubble ml-bubble-bot ml-streaming svelte-186qrb5");
-      attr(div2, "class", "ml-msg ml-assistant svelte-186qrb5");
+      attr(div1, "class", "ml-content ml-streaming svelte-1elwqoj");
+      attr(div2, "class", "ml-turn ml-turn-agent svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
-      append(div2, t0);
+      append(div2, t1);
       append(div2, div1);
-      append(div1, t1);
+      append(div1, t2);
       append(div1, span);
     },
     p(ctx2, dirty) {
       if (dirty & /*streamBuf*/
       2)
         set_data(
-          t1,
+          t2,
           /*streamBuf*/
           ctx2[1]
         );
@@ -3348,10 +3375,10 @@ function create_if_block3(ctx) {
       t2 = space();
       button1 = element("button");
       t3 = text(t3_value);
-      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-186qrb5");
-      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-186qrb5");
-      attr(div0, "class", "ml-bulk-actions svelte-186qrb5");
-      attr(div1, "class", "ml-pending-group svelte-186qrb5");
+      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-1elwqoj");
+      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-1elwqoj");
+      attr(div0, "class", "ml-bulk-actions svelte-1elwqoj");
+      attr(div1, "class", "ml-pending-group svelte-1elwqoj");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3552,7 +3579,7 @@ function create_fragment3(ctx) {
         if_block2.c();
       t3 = space();
       create_component(changesummary.$$.fragment);
-      attr(div, "class", "ml-root svelte-186qrb5");
+      attr(div, "class", "ml-root svelte-1elwqoj");
       attr(div, "role", "log");
       attr(div, "aria-live", "polite");
       attr(div, "aria-label", "Chat messages");
@@ -3953,22 +3980,35 @@ var ModeToggle = class extends SvelteComponent {
 var ModeToggle_default = ModeToggle;
 
 // src/ui/ConversationList.svelte
+var { Map: Map_1 } = globals;
 function get_each_context3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[5] = list[i];
+  child_ctx[8] = list[i];
+  return child_ctx;
+}
+function get_each_context_12(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[11] = list[i];
+  const constants_0 = rowDate(
+    /*p*/
+    child_ctx[11],
+    /*group*/
+    child_ctx[8].label
+  );
+  child_ctx[12] = constants_0;
   return child_ctx;
 }
 function create_else_block3(ctx) {
   let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_lookup = new Map_1();
   let each_1_anchor;
   let each_value = ensure_array_like(
-    /*paths*/
-    ctx[0]
+    /*groups*/
+    ctx[1]
   );
   const get_key = (ctx2) => (
-    /*p*/
-    ctx2[5]
+    /*group*/
+    ctx2[8].label
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context3(ctx, each_value, i);
@@ -3991,11 +4031,11 @@ function create_else_block3(ctx) {
       insert(target, each_1_anchor, anchor);
     },
     p(ctx2, dirty) {
-      if (dirty & /*paths, active, undefined, open, dateHint, label*/
+      if (dirty & /*groups, active, undefined, open, rowDate, label*/
       7) {
         each_value = ensure_array_like(
-          /*paths*/
-          ctx2[0]
+          /*groups*/
+          ctx2[1]
         );
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block3, each_1_anchor, get_each_context3);
       }
@@ -4016,7 +4056,7 @@ function create_if_block4(ctx) {
     c() {
       div = element("div");
       div.textContent = "No saved conversations";
-      attr(div, "class", "cl-empty svelte-5lf709");
+      attr(div, "class", "cl-empty svelte-1cegoy1");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -4031,27 +4071,25 @@ function create_if_block4(ctx) {
 }
 function create_if_block_14(ctx) {
   let span;
-  let t_value = dateHint(
-    /*p*/
-    ctx[5]
-  ) + "";
+  let t_value = (
+    /*d*/
+    ctx[12] + ""
+  );
   let t;
   return {
     c() {
       span = element("span");
       t = text(t_value);
-      attr(span, "class", "cl-date svelte-5lf709");
+      attr(span, "class", "cl-date svelte-1cegoy1");
     },
     m(target, anchor) {
       insert(target, span, anchor);
       append(span, t);
     },
     p(ctx2, dirty) {
-      if (dirty & /*paths*/
-      1 && t_value !== (t_value = dateHint(
-        /*p*/
-        ctx2[5]
-      ) + ""))
+      if (dirty & /*groups*/
+      2 && t_value !== (t_value = /*d*/
+      ctx2[12] + ""))
         set_data(t, t_value);
     },
     d(detaching) {
@@ -4061,7 +4099,7 @@ function create_if_block_14(ctx) {
     }
   };
 }
-function create_each_block3(key_1, ctx) {
+function create_each_block_12(key_1, ctx) {
   let button;
   let svg;
   let path;
@@ -4069,26 +4107,25 @@ function create_each_block3(key_1, ctx) {
   let span;
   let t1_value = label(
     /*p*/
-    ctx[5]
+    ctx[11]
   ) + "";
   let t1;
   let t2;
-  let show_if = dateHint(
-    /*p*/
-    ctx[5]
-  );
   let t3;
   let button_title_value;
   let button_aria_current_value;
   let mounted;
   let dispose;
-  let if_block = show_if && create_if_block_14(ctx);
+  let if_block = (
+    /*d*/
+    ctx[12] && create_if_block_14(ctx)
+  );
   function click_handler() {
     return (
       /*click_handler*/
-      ctx[4](
+      ctx[6](
         /*p*/
-        ctx[5]
+        ctx[11]
       )
     );
   }
@@ -4107,9 +4144,9 @@ function create_each_block3(key_1, ctx) {
         if_block.c();
       t3 = space();
       attr(path, "d", "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z");
-      attr(svg, "class", "cl-icon svelte-5lf709");
-      attr(svg, "width", "12");
-      attr(svg, "height", "12");
+      attr(svg, "class", "cl-icon svelte-1cegoy1");
+      attr(svg, "width", "11");
+      attr(svg, "height", "11");
       attr(svg, "viewBox", "0 0 24 24");
       attr(svg, "fill", "none");
       attr(svg, "stroke", "currentColor");
@@ -4117,19 +4154,19 @@ function create_each_block3(key_1, ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(span, "class", "cl-label svelte-5lf709");
-      attr(button, "class", "cl-item svelte-5lf709");
+      attr(span, "class", "cl-label svelte-1cegoy1");
+      attr(button, "class", "cl-item svelte-1cegoy1");
       attr(button, "title", button_title_value = /*p*/
-      ctx[5]);
+      ctx[11]);
       attr(button, "aria-current", button_aria_current_value = /*p*/
-      ctx[5] === /*active*/
-      ctx[1] ? "page" : void 0);
+      ctx[11] === /*active*/
+      ctx[0] ? "page" : void 0);
       toggle_class(
         button,
         "cl-active",
         /*p*/
-        ctx[5] === /*active*/
-        ctx[1]
+        ctx[11] === /*active*/
+        ctx[0]
       );
       this.first = button;
     },
@@ -4151,19 +4188,16 @@ function create_each_block3(key_1, ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty & /*paths*/
-      1 && t1_value !== (t1_value = label(
+      if (dirty & /*groups*/
+      2 && t1_value !== (t1_value = label(
         /*p*/
-        ctx[5]
+        ctx[11]
       ) + ""))
         set_data(t1, t1_value);
-      if (dirty & /*paths*/
-      1)
-        show_if = dateHint(
-          /*p*/
-          ctx[5]
-        );
-      if (show_if) {
+      if (
+        /*d*/
+        ctx[12]
+      ) {
         if (if_block) {
           if_block.p(ctx, dirty);
         } else {
@@ -4175,25 +4209,25 @@ function create_each_block3(key_1, ctx) {
         if_block.d(1);
         if_block = null;
       }
-      if (dirty & /*paths*/
-      1 && button_title_value !== (button_title_value = /*p*/
-      ctx[5])) {
+      if (dirty & /*groups*/
+      2 && button_title_value !== (button_title_value = /*p*/
+      ctx[11])) {
         attr(button, "title", button_title_value);
       }
-      if (dirty & /*paths, active*/
+      if (dirty & /*groups, active*/
       3 && button_aria_current_value !== (button_aria_current_value = /*p*/
-      ctx[5] === /*active*/
-      ctx[1] ? "page" : void 0)) {
+      ctx[11] === /*active*/
+      ctx[0] ? "page" : void 0)) {
         attr(button, "aria-current", button_aria_current_value);
       }
-      if (dirty & /*paths, active*/
+      if (dirty & /*groups, active*/
       3) {
         toggle_class(
           button,
           "cl-active",
           /*p*/
-          ctx[5] === /*active*/
-          ctx[1]
+          ctx[11] === /*active*/
+          ctx[0]
         );
       }
     },
@@ -4208,12 +4242,92 @@ function create_each_block3(key_1, ctx) {
     }
   };
 }
+function create_each_block3(key_1, ctx) {
+  let div;
+  let t0_value = (
+    /*group*/
+    ctx[8].label + ""
+  );
+  let t0;
+  let t1;
+  let each_blocks = [];
+  let each_1_lookup = new Map_1();
+  let each_1_anchor;
+  let each_value_1 = ensure_array_like(
+    /*group*/
+    ctx[8].paths
+  );
+  const get_key = (ctx2) => (
+    /*p*/
+    ctx2[11]
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_12(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_12(key, child_ctx));
+  }
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      t0 = text(t0_value);
+      t1 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+      attr(div, "class", "cl-section-label svelte-1cegoy1");
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, t0);
+      insert(target, t1, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty & /*groups*/
+      2 && t0_value !== (t0_value = /*group*/
+      ctx[8].label + ""))
+        set_data(t0, t0_value);
+      if (dirty & /*groups, active, undefined, open, rowDate, label*/
+      7) {
+        each_value_1 = ensure_array_like(
+          /*group*/
+          ctx[8].paths
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_12, each_1_anchor, get_each_context_12);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t1);
+        detach(each_1_anchor);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
+    }
+  };
+}
 function create_fragment5(ctx) {
   let div;
+  let t0;
+  let button;
+  let mounted;
+  let dispose;
   function select_block_type(ctx2, dirty) {
     if (
-      /*paths*/
-      ctx2[0].length === 0
+      /*groups*/
+      ctx2[1].length === 0
     )
       return create_if_block4;
     return create_else_block3;
@@ -4224,13 +4338,29 @@ function create_fragment5(ctx) {
     c() {
       div = element("div");
       if_block.c();
-      attr(div, "class", "cl-root svelte-5lf709");
+      t0 = space();
+      button = element("button");
+      button.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    New conversation`;
+      attr(button, "class", "cl-new-btn svelte-1cegoy1");
+      attr(div, "class", "cl-root svelte-1cegoy1");
       attr(div, "role", "navigation");
       attr(div, "aria-label", "Conversation history");
     },
     m(target, anchor) {
       insert(target, div, anchor);
       if_block.m(div, null);
+      append(div, t0);
+      append(div, button);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*startNew*/
+          ctx[3]
+        );
+        mounted = true;
+      }
     },
     p(ctx2, [dirty]) {
       if (current_block_type === (current_block_type = select_block_type(ctx2, dirty)) && if_block) {
@@ -4240,7 +4370,7 @@ function create_fragment5(ctx) {
         if_block = current_block_type(ctx2);
         if (if_block) {
           if_block.c();
-          if_block.m(div, null);
+          if_block.m(div, t0);
         }
       }
     },
@@ -4251,38 +4381,117 @@ function create_fragment5(ctx) {
         detach(div);
       }
       if_block.d();
+      mounted = false;
+      dispose();
     }
   };
 }
 function label(p) {
   return (p.split("/").pop() ?? p).replace(/\.md$/i, "");
 }
-function dateHint(p) {
+function formatDate(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const dy = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${dy}`;
+}
+function dateLabel(p) {
+  const today = /* @__PURE__ */ new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
   const m = p.match(/(\d{4}-\d{2}-\d{2})/);
-  return m ? m[1] : "";
+  if (!m)
+    return "Older";
+  if (m[1] === formatDate(today))
+    return "Today";
+  if (m[1] === formatDate(yesterday))
+    return "Yesterday";
+  return m[1];
+}
+function rowDate(p, groupLbl) {
+  if (groupLbl === "Today" || groupLbl === "Yesterday")
+    return "";
+  const m = p.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m)
+    return "";
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ];
+  return `${months[parseInt(m[2]) - 1]} ${parseInt(m[3])}`;
+}
+function groupPaths(ps) {
+  const map = /* @__PURE__ */ new Map();
+  for (const p of ps) {
+    const key = dateLabel(p);
+    if (!map.has(key))
+      map.set(key, []);
+    map.get(key).push(p);
+  }
+  const pinned = ["Today", "Yesterday"];
+  const entries = [...map.entries()];
+  entries.sort(([a], [b]) => {
+    const ia = pinned.indexOf(a);
+    const ib = pinned.indexOf(b);
+    if (ia !== -1 && ib !== -1)
+      return ia - ib;
+    if (ia !== -1)
+      return -1;
+    if (ib !== -1)
+      return 1;
+    if (a === "Older")
+      return 1;
+    if (b === "Older")
+      return -1;
+    return b.localeCompare(a);
+  });
+  return entries.map(([lbl, items]) => ({ label: lbl, paths: items }));
 }
 function instance5($$self, $$props, $$invalidate) {
+  let groups;
   let { plugin } = $$props;
+  const dispatch = createEventDispatcher();
   let paths = [];
   let active = plugin.currentConversation?.path ?? "";
   onMount(async () => {
-    $$invalidate(0, paths = await plugin.conversations.list());
+    $$invalidate(5, paths = await plugin.conversations.list());
   });
   async function open(p) {
     await plugin.openConversation(p);
-    $$invalidate(1, active = p);
+    $$invalidate(0, active = p);
+    dispatch("select");
+  }
+  function startNew() {
+    dispatch("newChat");
   }
   const click_handler = (p) => open(p);
   $$self.$$set = ($$props2) => {
     if ("plugin" in $$props2)
-      $$invalidate(3, plugin = $$props2.plugin);
+      $$invalidate(4, plugin = $$props2.plugin);
   };
-  return [paths, active, open, plugin, click_handler];
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*paths*/
+    32) {
+      $:
+        $$invalidate(1, groups = groupPaths(paths));
+    }
+  };
+  return [active, groups, open, startNew, plugin, paths, click_handler];
 }
 var ConversationList = class extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 3 });
+    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 4 });
   }
 };
 var ConversationList_default = ConversationList;
@@ -4296,11 +4505,21 @@ function create_if_block_23(ctx) {
     /*plugin*/
     ctx[0]
   ) } });
+  conversationlist.$on(
+    "select",
+    /*onConversationSelect*/
+    ctx[15]
+  );
+  conversationlist.$on(
+    "newChat",
+    /*newChat*/
+    ctx[14]
+  );
   return {
     c() {
       div = element("div");
       create_component(conversationlist.$$.fragment);
-      attr(div, "class", "ac-history-drawer svelte-swaviq");
+      attr(div, "class", "ac-history-drawer svelte-9ylsa4");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -4360,7 +4579,7 @@ function create_if_block_15(ctx) {
         /*charCount*/
         ctx[2]
       );
-      attr(span, "class", "ac-char-count svelte-swaviq");
+      attr(span, "class", "ac-char-count svelte-9ylsa4");
       toggle_class(
         span,
         "ac-char-warn",
@@ -4427,13 +4646,13 @@ function create_else_block4(ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(button, "class", "ac-btn ac-btn-send svelte-swaviq");
+      attr(button, "class", "ac-btn ac-btn-send svelte-9ylsa4");
       button.disabled = button_disabled_value = !/*input*/
       ctx[1].trim();
       attr(button, "title", button_title_value = /*t*/
-      ctx[16]("chat.send"));
+      ctx[17]("chat.send"));
       attr(button, "aria-label", button_aria_label_value = /*t*/
-      ctx[16]("chat.send"));
+      ctx[17]("chat.send"));
     },
     m(target, anchor) {
       insert(target, button, anchor);
@@ -4489,11 +4708,11 @@ function create_if_block5(ctx) {
       attr(svg, "viewBox", "0 0 24 24");
       attr(svg, "fill", "currentColor");
       attr(svg, "aria-hidden", "true");
-      attr(button, "class", "ac-btn ac-btn-stop svelte-swaviq");
+      attr(button, "class", "ac-btn ac-btn-stop svelte-9ylsa4");
       attr(button, "title", button_title_value = /*t*/
-      ctx[16]("chat.cancel"));
+      ctx[17]("chat.cancel"));
       attr(button, "aria-label", button_aria_label_value = /*t*/
-      ctx[16]("chat.cancel"));
+      ctx[17]("chat.cancel"));
     },
     m(target, anchor) {
       insert(target, button, anchor);
@@ -4656,7 +4875,7 @@ function create_fragment6(ctx) {
       attr(svg0, "stroke-linecap", "round");
       attr(svg0, "stroke-linejoin", "round");
       attr(svg0, "aria-hidden", "true");
-      attr(button0, "class", "ac-btn ac-btn-ghost ac-history-toggle svelte-swaviq");
+      attr(button0, "class", "ac-btn ac-btn-ghost ac-history-toggle svelte-9ylsa4");
       attr(button0, "title", "Conversation history");
       attr(
         button0,
@@ -4670,9 +4889,9 @@ function create_fragment6(ctx) {
         /*showHistory*/
         ctx[8]
       );
-      attr(span0, "class", "ac-provider-dot svelte-swaviq");
+      attr(span0, "class", "ac-provider-dot svelte-9ylsa4");
       attr(span0, "aria-hidden", "true");
-      attr(span1, "class", "ac-provider-chip svelte-swaviq");
+      attr(span1, "class", "ac-provider-chip svelte-9ylsa4");
       attr(span1, "title", "Active provider / model");
       attr(line0, "x1", "12");
       attr(line0, "y1", "5");
@@ -4691,34 +4910,34 @@ function create_fragment6(ctx) {
       attr(svg1, "stroke-linecap", "round");
       attr(svg1, "stroke-linejoin", "round");
       attr(svg1, "aria-hidden", "true");
-      attr(button1, "class", "ac-btn ac-btn-ghost svelte-swaviq");
+      attr(button1, "class", "ac-btn ac-btn-ghost svelte-9ylsa4");
       attr(button1, "title", button1_title_value = /*t*/
-      ctx[16]("chat.new"));
+      ctx[17]("chat.new"));
       attr(button1, "aria-label", button1_aria_label_value = /*t*/
-      ctx[16]("chat.new"));
-      attr(div0, "class", "ac-header-right svelte-swaviq");
-      attr(div1, "class", "ac-header svelte-swaviq");
+      ctx[17]("chat.new"));
+      attr(div0, "class", "ac-header-right svelte-9ylsa4");
+      attr(div1, "class", "ac-header svelte-9ylsa4");
       attr(textarea_1, "placeholder", textarea_1_placeholder_value = /*busy*/
       ctx[3] ? "" : (
         /*t*/
-        ctx[16]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
+        ctx[17]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
       ));
       textarea_1.disabled = /*busy*/
       ctx[3];
       attr(textarea_1, "rows", "1");
       attr(textarea_1, "aria-label", "Chat input");
-      attr(textarea_1, "class", "svelte-swaviq");
-      attr(div2, "class", "ac-input-actions svelte-swaviq");
-      attr(div3, "class", "ac-input-footer svelte-swaviq");
-      attr(div4, "class", "ac-input-box svelte-swaviq");
+      attr(textarea_1, "class", "svelte-9ylsa4");
+      attr(div2, "class", "ac-input-actions svelte-9ylsa4");
+      attr(div3, "class", "ac-input-footer svelte-9ylsa4");
+      attr(div4, "class", "ac-input-box svelte-9ylsa4");
       toggle_class(
         div4,
         "busy",
         /*busy*/
         ctx[3]
       );
-      attr(div5, "class", "ac-input-wrap svelte-swaviq");
-      attr(div6, "class", "ac-shell svelte-swaviq");
+      attr(div5, "class", "ac-input-wrap svelte-9ylsa4");
+      attr(div6, "class", "ac-shell svelte-9ylsa4");
     },
     m(target, anchor) {
       insert(target, div6, anchor);
@@ -4749,7 +4968,7 @@ function create_fragment6(ctx) {
       append(div6, div5);
       append(div5, div4);
       append(div4, textarea_1);
-      ctx[18](textarea_1);
+      ctx[19](textarea_1);
       set_input_value(
         textarea_1,
         /*input*/
@@ -4768,7 +4987,7 @@ function create_fragment6(ctx) {
             button0,
             "click",
             /*click_handler*/
-            ctx[17]
+            ctx[18]
           ),
           listen(
             button1,
@@ -4780,7 +4999,7 @@ function create_fragment6(ctx) {
             textarea_1,
             "input",
             /*textarea_1_input_handler*/
-            ctx[19]
+            ctx[20]
           ),
           listen(
             textarea_1,
@@ -4792,7 +5011,7 @@ function create_fragment6(ctx) {
             textarea_1,
             "keydown",
             /*onKeydown*/
-            ctx[15]
+            ctx[16]
           )
         ];
         mounted = true;
@@ -4875,7 +5094,7 @@ function create_fragment6(ctx) {
       8 && textarea_1_placeholder_value !== (textarea_1_placeholder_value = /*busy*/
       ctx2[3] ? "" : (
         /*t*/
-        ctx2[16]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
+        ctx2[17]("chat.placeholder") || "Ask anything\u2026 (Ctrl+Enter)"
       ))) {
         attr(textarea_1, "placeholder", textarea_1_placeholder_value);
       }
@@ -4944,7 +5163,7 @@ function create_fragment6(ctx) {
       if (if_block0)
         if_block0.d();
       destroy_component(messagelist);
-      ctx[18](null);
+      ctx[19](null);
       if_block1.d();
       if_block2.d();
       mounted = false;
@@ -5014,6 +5233,10 @@ function instance6($$self, $$props, $$invalidate) {
     $$invalidate(5, messages = plugin.currentConversation.messages.slice());
     $$invalidate(8, showHistory = false);
   }
+  async function onConversationSelect() {
+    $$invalidate(5, messages = plugin.currentConversation.messages.slice());
+    $$invalidate(8, showHistory = false);
+  }
   function onKeydown(e) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -5069,6 +5292,7 @@ function instance6($$self, $$props, $$invalidate) {
     send,
     cancel,
     newChat,
+    onConversationSelect,
     onKeydown,
     t,
     click_handler,
