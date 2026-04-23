@@ -102,7 +102,8 @@
   {#if streamBuf}
     <div class="ml-turn ml-turn-agent">
       <div class="ml-name ml-name-agent">Agent</div>
-      <div class="ml-content ml-streaming">{streamBuf}<span class="ml-cursor" aria-hidden="true"></span></div>
+      <div class="ml-content" use:markdown={{ text: streamBuf, plugin }}></div>
+      <span class="ml-cursor" aria-hidden="true"></span>
     </div>
   {/if}
 
@@ -205,11 +206,10 @@
   .ml-content-error { color: var(--color-red, #e53e3e) !important; white-space: pre-wrap; }
 
   /* Streaming */
-  .ml-streaming { white-space: pre-wrap; }
   .ml-cursor {
     display: inline-block; width: 2px; height: 1em;
     background: var(--interactive-accent);
-    margin-left: 2px;
+    margin-top: 2px;
     vertical-align: text-bottom;
     border-radius: 1px;
     animation: ml-blink 1s step-end infinite;

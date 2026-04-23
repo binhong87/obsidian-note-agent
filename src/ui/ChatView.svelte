@@ -32,11 +32,16 @@
     let errorMsg: string | null = null;
     await tick();
     autoResize();
+
+    // Show user message immediately — don't wait for the first network event
+    messages = [...messages, { role: "user", content: text }];
+    await tick();
+
     try {
       for await (const evt of plugin.sendMessage(text)) {
         if (evt.type === "text") {
           streamBuf += (evt as any).text;
-          messages = [...plugin.currentConversation.messages];
+          // Don't sync messages here — streamBuf drives the live streaming view
         } else if (["applied","rejected","tool","pending","done","stopped"].includes(evt.type)) {
           messages = [...plugin.currentConversation.messages];
           streamBuf = "";

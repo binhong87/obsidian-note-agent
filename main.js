@@ -3069,8 +3069,8 @@ function create_if_block_7(ctx) {
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-fojiti" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-fojiti">Start a conversation</p> <p class="ml-empty-hint svelte-fojiti">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
-      attr(div1, "class", "ml-empty svelte-fojiti");
+      div1.innerHTML = `<div class="ml-empty-icon svelte-1d1wfbn" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-1d1wfbn">Start a conversation</p> <p class="ml-empty-hint svelte-1d1wfbn">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      attr(div1, "class", "ml-empty svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3147,10 +3147,10 @@ function create_if_block_5(ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(span0, "class", "ml-tool-name svelte-fojiti");
-      attr(span1, "class", "ml-tool-sep svelte-fojiti");
-      attr(span2, "class", "ml-tool-preview svelte-fojiti");
-      attr(div, "class", "ml-tool-result svelte-fojiti");
+      attr(span0, "class", "ml-tool-name svelte-1d1wfbn");
+      attr(span1, "class", "ml-tool-sep svelte-1d1wfbn");
+      attr(span2, "class", "ml-tool-preview svelte-1d1wfbn");
+      attr(div, "class", "ml-tool-result svelte-1d1wfbn");
       attr(div, "title", div_title_value = /*m*/
       ctx[14].content);
     },
@@ -3243,8 +3243,8 @@ function create_if_block_32(ctx) {
       div0.textContent = "Agent";
       t1 = space();
       if_block.c();
-      attr(div0, "class", "ml-name ml-name-agent svelte-fojiti");
-      attr(div1, "class", "ml-turn ml-turn-agent svelte-fojiti");
+      attr(div0, "class", "ml-name ml-name-agent svelte-1d1wfbn");
+      attr(div1, "class", "ml-turn ml-turn-agent svelte-1d1wfbn");
       toggle_class(div1, "ml-error", isError(
         /*m*/
         ctx[14].content
@@ -3301,9 +3301,9 @@ function create_if_block_22(ctx) {
       t1 = space();
       div1 = element("div");
       t2 = text(t2_value);
-      attr(div0, "class", "ml-name ml-name-user svelte-fojiti");
-      attr(div1, "class", "ml-content svelte-fojiti");
-      attr(div2, "class", "ml-turn ml-turn-user svelte-fojiti");
+      attr(div0, "class", "ml-name ml-name-user svelte-1d1wfbn");
+      attr(div1, "class", "ml-content svelte-1d1wfbn");
+      attr(div2, "class", "ml-turn ml-turn-user svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3340,7 +3340,7 @@ function create_if_block_6(ctx) {
       t0 = text('"');
       t1 = text(t1_value);
       t2 = text('"');
-      attr(span, "class", "ml-tool-arg svelte-fojiti");
+      attr(span, "class", "ml-tool-arg svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, span, anchor);
@@ -3371,7 +3371,7 @@ function create_else_block2(ctx) {
   return {
     c() {
       div = element("div");
-      attr(div, "class", "ml-content svelte-fojiti");
+      attr(div, "class", "ml-content svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3424,7 +3424,7 @@ function create_if_block_4(ctx) {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "ml-content ml-content-error svelte-fojiti");
+      attr(div, "class", "ml-content ml-content-error svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3516,8 +3516,11 @@ function create_if_block_13(ctx) {
   let div0;
   let t1;
   let div1;
+  let markdown_action;
   let t2;
   let span;
+  let mounted;
+  let dispose;
   return {
     c() {
       div2 = element("div");
@@ -3525,38 +3528,55 @@ function create_if_block_13(ctx) {
       div0.textContent = "Agent";
       t1 = space();
       div1 = element("div");
-      t2 = text(
-        /*streamBuf*/
-        ctx[1]
-      );
+      t2 = space();
       span = element("span");
-      attr(div0, "class", "ml-name ml-name-agent svelte-fojiti");
-      attr(span, "class", "ml-cursor svelte-fojiti");
+      attr(div0, "class", "ml-name ml-name-agent svelte-1d1wfbn");
+      attr(div1, "class", "ml-content svelte-1d1wfbn");
+      attr(span, "class", "ml-cursor svelte-1d1wfbn");
       attr(span, "aria-hidden", "true");
-      attr(div1, "class", "ml-content ml-streaming svelte-fojiti");
-      attr(div2, "class", "ml-turn ml-turn-agent svelte-fojiti");
+      attr(div2, "class", "ml-turn ml-turn-agent svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
       append(div2, t1);
       append(div2, div1);
-      append(div1, t2);
-      append(div1, span);
+      append(div2, t2);
+      append(div2, span);
+      if (!mounted) {
+        dispose = action_destroyer(markdown_action = markdown.call(null, div1, {
+          text: (
+            /*streamBuf*/
+            ctx[1]
+          ),
+          plugin: (
+            /*plugin*/
+            ctx[3]
+          )
+        }));
+        mounted = true;
+      }
     },
     p(ctx2, dirty) {
-      if (dirty & /*streamBuf*/
-      2)
-        set_data(
-          t2,
-          /*streamBuf*/
-          ctx2[1]
-        );
+      if (markdown_action && is_function(markdown_action.update) && dirty & /*streamBuf, plugin*/
+      10)
+        markdown_action.update.call(null, {
+          text: (
+            /*streamBuf*/
+            ctx2[1]
+          ),
+          plugin: (
+            /*plugin*/
+            ctx2[3]
+          )
+        });
     },
     d(detaching) {
       if (detaching) {
         detach(div2);
       }
+      mounted = false;
+      dispose();
     }
   };
 }
@@ -3608,10 +3628,10 @@ function create_if_block3(ctx) {
       t2 = space();
       button1 = element("button");
       t3 = text(t3_value);
-      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-fojiti");
-      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-fojiti");
-      attr(div0, "class", "ml-bulk-actions svelte-fojiti");
-      attr(div1, "class", "ml-pending-group svelte-fojiti");
+      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-1d1wfbn");
+      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-1d1wfbn");
+      attr(div0, "class", "ml-bulk-actions svelte-1d1wfbn");
+      attr(div1, "class", "ml-pending-group svelte-1d1wfbn");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3812,7 +3832,7 @@ function create_fragment3(ctx) {
         if_block2.c();
       t3 = space();
       create_component(changesummary.$$.fragment);
-      attr(div, "class", "ml-root svelte-fojiti");
+      attr(div, "class", "ml-root svelte-1d1wfbn");
       attr(div, "role", "log");
       attr(div, "aria-live", "polite");
       attr(div, "aria-label", "Chat messages");
@@ -5471,12 +5491,15 @@ function instance6($$self, $$props, $$invalidate) {
     let errorMsg = null;
     await tick();
     autoResize();
+    $$invalidate(5, messages = [...messages, { role: "user", content: text2 }]);
+    await tick();
     try {
       for await (const evt of plugin.sendMessage(text2)) {
         if (evt.type === "text") {
           $$invalidate(6, streamBuf += evt.text);
-          $$invalidate(5, messages = [...plugin.currentConversation.messages]);
-        } else if (["applied", "rejected", "tool", "pending", "done", "stopped"].includes(evt.type)) {
+        } else if (["applied", "rejected", "tool", "pending", "done", "stopped"].includes(
+          evt.type
+        )) {
           $$invalidate(5, messages = [...plugin.currentConversation.messages]);
           $$invalidate(6, streamBuf = "");
         } else if (evt.type === "error") {
