@@ -3030,23 +3030,36 @@ function markdown(node, params) {
 }
 
 // src/ui/MessageList.svelte
+var { Map: Map_1 } = globals;
 function get_each_context2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[10] = list[i];
+  child_ctx[11] = list[i];
   return child_ctx;
 }
 function get_each_context_1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[13] = list[i];
+  child_ctx[14] = list[i];
   return child_ctx;
 }
-function create_if_block_6(ctx) {
+function get_if_ctx(ctx) {
+  const child_ctx = ctx.slice();
+  const constants_0 = (
+    /*toolCallMap*/
+    child_ctx[5].get(
+      /*m*/
+      child_ctx[14].toolCallId ?? ""
+    )
+  );
+  child_ctx[17] = constants_0;
+  return child_ctx;
+}
+function create_if_block_7(ctx) {
   let div1;
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-1elwqoj" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-1elwqoj">Start a conversation</p> <p class="ml-empty-hint svelte-1elwqoj">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
-      attr(div1, "class", "ml-empty svelte-1elwqoj");
+      div1.innerHTML = `<div class="ml-empty-icon svelte-fojiti" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-fojiti">Start a conversation</p> <p class="ml-empty-hint svelte-fojiti">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      attr(div1, "class", "ml-empty svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3060,20 +3073,135 @@ function create_if_block_6(ctx) {
 }
 function create_if_block_5(ctx) {
   let div;
+  let svg;
+  let circle;
+  let line;
+  let t0;
+  let span0;
+  let t1_value = (
+    /*tc*/
+    (ctx[17]?.name ?? "tool") + ""
+  );
+  let t1;
+  let t2;
+  let show_if = (
+    /*tc*/
+    ctx[17]?.args && firstArgHint(
+      /*tc*/
+      ctx[17].args
+    )
+  );
+  let t3;
+  let span1;
+  let t5;
+  let span2;
+  let t6_value = previewResult(
+    /*m*/
+    ctx[14].content
+  ) + "";
+  let t6;
+  let div_title_value;
+  let if_block = show_if && create_if_block_6(ctx);
   return {
     c() {
       div = element("div");
-      div.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> <span class="ml-tool-label svelte-1elwqoj">tool result</span>`;
-      attr(div, "class", "ml-tool-result svelte-1elwqoj");
+      svg = svg_element("svg");
+      circle = svg_element("circle");
+      line = svg_element("line");
+      t0 = space();
+      span0 = element("span");
+      t1 = text(t1_value);
+      t2 = space();
+      if (if_block)
+        if_block.c();
+      t3 = space();
+      span1 = element("span");
+      span1.textContent = "\u2192";
+      t5 = space();
+      span2 = element("span");
+      t6 = text(t6_value);
+      attr(circle, "cx", "11");
+      attr(circle, "cy", "11");
+      attr(circle, "r", "8");
+      attr(line, "x1", "21");
+      attr(line, "y1", "21");
+      attr(line, "x2", "16.65");
+      attr(line, "y2", "16.65");
+      attr(svg, "width", "10");
+      attr(svg, "height", "10");
+      attr(svg, "viewBox", "0 0 24 24");
+      attr(svg, "fill", "none");
+      attr(svg, "stroke", "currentColor");
+      attr(svg, "stroke-width", "2");
+      attr(svg, "stroke-linecap", "round");
+      attr(svg, "stroke-linejoin", "round");
+      attr(svg, "aria-hidden", "true");
+      attr(span0, "class", "ml-tool-name svelte-fojiti");
+      attr(span1, "class", "ml-tool-sep svelte-fojiti");
+      attr(span2, "class", "ml-tool-preview svelte-fojiti");
+      attr(div, "class", "ml-tool-result svelte-fojiti");
+      attr(div, "title", div_title_value = /*m*/
+      ctx[14].content);
     },
     m(target, anchor) {
       insert(target, div, anchor);
+      append(div, svg);
+      append(svg, circle);
+      append(svg, line);
+      append(div, t0);
+      append(div, span0);
+      append(span0, t1);
+      append(div, t2);
+      if (if_block)
+        if_block.m(div, null);
+      append(div, t3);
+      append(div, span1);
+      append(div, t5);
+      append(div, span2);
+      append(span2, t6);
     },
-    p: noop,
+    p(ctx2, dirty) {
+      if (dirty & /*toolCallMap, messages*/
+      33 && t1_value !== (t1_value = /*tc*/
+      (ctx2[17]?.name ?? "tool") + ""))
+        set_data(t1, t1_value);
+      if (dirty & /*toolCallMap, messages*/
+      33)
+        show_if = /*tc*/
+        ctx2[17]?.args && firstArgHint(
+          /*tc*/
+          ctx2[17].args
+        );
+      if (show_if) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block_6(ctx2);
+          if_block.c();
+          if_block.m(div, t3);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+      if (dirty & /*messages*/
+      1 && t6_value !== (t6_value = previewResult(
+        /*m*/
+        ctx2[14].content
+      ) + ""))
+        set_data(t6, t6_value);
+      if (dirty & /*messages*/
+      1 && div_title_value !== (div_title_value = /*m*/
+      ctx2[14].content)) {
+        attr(div, "title", div_title_value);
+      }
+    },
     d(detaching) {
       if (detaching) {
         detach(div);
       }
+      if (if_block)
+        if_block.d();
     }
   };
 }
@@ -3089,7 +3217,7 @@ function create_if_block_32(ctx) {
     if (show_if == null)
       show_if = !!isError(
         /*m*/
-        ctx2[13].content
+        ctx2[14].content
       );
     if (show_if)
       return create_if_block_4;
@@ -3104,11 +3232,11 @@ function create_if_block_32(ctx) {
       div0.textContent = "Agent";
       t1 = space();
       if_block.c();
-      attr(div0, "class", "ml-name ml-name-agent svelte-1elwqoj");
-      attr(div1, "class", "ml-turn ml-turn-agent svelte-1elwqoj");
+      attr(div0, "class", "ml-name ml-name-agent svelte-fojiti");
+      attr(div1, "class", "ml-turn ml-turn-agent svelte-fojiti");
       toggle_class(div1, "ml-error", isError(
         /*m*/
-        ctx[13].content
+        ctx[14].content
       ));
     },
     m(target, anchor) {
@@ -3132,7 +3260,7 @@ function create_if_block_32(ctx) {
       1) {
         toggle_class(div1, "ml-error", isError(
           /*m*/
-          ctx2[13].content
+          ctx2[14].content
         ));
       }
     },
@@ -3151,7 +3279,7 @@ function create_if_block_22(ctx) {
   let div1;
   let t2_value = (
     /*m*/
-    ctx[13].content + ""
+    ctx[14].content + ""
   );
   let t2;
   return {
@@ -3162,9 +3290,9 @@ function create_if_block_22(ctx) {
       t1 = space();
       div1 = element("div");
       t2 = text(t2_value);
-      attr(div0, "class", "ml-name ml-name-user svelte-1elwqoj");
-      attr(div1, "class", "ml-content svelte-1elwqoj");
-      attr(div2, "class", "ml-turn ml-turn-user svelte-1elwqoj");
+      attr(div0, "class", "ml-name ml-name-user svelte-fojiti");
+      attr(div1, "class", "ml-content svelte-fojiti");
+      attr(div2, "class", "ml-turn ml-turn-user svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3176,12 +3304,50 @@ function create_if_block_22(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t2_value !== (t2_value = /*m*/
-      ctx2[13].content + ""))
+      ctx2[14].content + ""))
         set_data(t2, t2_value);
     },
     d(detaching) {
       if (detaching) {
         detach(div2);
+      }
+    }
+  };
+}
+function create_if_block_6(ctx) {
+  let span;
+  let t0;
+  let t1_value = firstArgHint(
+    /*tc*/
+    ctx[17].args
+  ) + "";
+  let t1;
+  let t2;
+  return {
+    c() {
+      span = element("span");
+      t0 = text('"');
+      t1 = text(t1_value);
+      t2 = text('"');
+      attr(span, "class", "ml-tool-arg svelte-fojiti");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      append(span, t0);
+      append(span, t1);
+      append(span, t2);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*toolCallMap, messages*/
+      33 && t1_value !== (t1_value = firstArgHint(
+        /*tc*/
+        ctx2[17].args
+      ) + ""))
+        set_data(t1, t1_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
       }
     }
   };
@@ -3194,7 +3360,7 @@ function create_else_block2(ctx) {
   return {
     c() {
       div = element("div");
-      attr(div, "class", "ml-content svelte-1elwqoj");
+      attr(div, "class", "ml-content svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3202,7 +3368,7 @@ function create_else_block2(ctx) {
         dispose = action_destroyer(markdown_action = markdown.call(null, div, {
           text: (
             /*m*/
-            ctx[13].content
+            ctx[14].content
           ),
           plugin: (
             /*plugin*/
@@ -3219,7 +3385,7 @@ function create_else_block2(ctx) {
         markdown_action.update.call(null, {
           text: (
             /*m*/
-            ctx[13].content
+            ctx[14].content
           ),
           plugin: (
             /*plugin*/
@@ -3240,14 +3406,14 @@ function create_if_block_4(ctx) {
   let div;
   let t_value = (
     /*m*/
-    ctx[13].content + ""
+    ctx[14].content + ""
   );
   let t;
   return {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "ml-content ml-content-error svelte-1elwqoj");
+      attr(div, "class", "ml-content ml-content-error svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3256,7 +3422,7 @@ function create_if_block_4(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t_value !== (t_value = /*m*/
-      ctx2[13].content + ""))
+      ctx2[14].content + ""))
         set_data(t, t_value);
     },
     d(detaching) {
@@ -3272,22 +3438,27 @@ function create_each_block_1(key_1, ctx) {
   function select_block_type(ctx2, dirty) {
     if (
       /*m*/
-      ctx2[13].role === "user"
+      ctx2[14].role === "user"
     )
       return create_if_block_22;
     if (
       /*m*/
-      ctx2[13].role === "assistant"
+      ctx2[14].role === "assistant"
     )
       return create_if_block_32;
     if (
       /*m*/
-      ctx2[13].role === "tool"
+      ctx2[14].role === "tool"
     )
       return create_if_block_5;
   }
+  function select_block_ctx(ctx2, type) {
+    if (type === create_if_block_5)
+      return get_if_ctx(ctx2);
+    return ctx2;
+  }
   let current_block_type = select_block_type(ctx, -1);
-  let if_block = current_block_type && current_block_type(ctx);
+  let if_block = current_block_type && current_block_type(select_block_ctx(ctx, current_block_type));
   return {
     key: key_1,
     first: null,
@@ -3307,11 +3478,11 @@ function create_each_block_1(key_1, ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block) {
-        if_block.p(ctx, dirty);
+        if_block.p(select_block_ctx(ctx, current_block_type), dirty);
       } else {
         if (if_block)
           if_block.d(1);
-        if_block = current_block_type && current_block_type(ctx);
+        if_block = current_block_type && current_block_type(select_block_ctx(ctx, current_block_type));
         if (if_block) {
           if_block.c();
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -3348,11 +3519,11 @@ function create_if_block_13(ctx) {
         ctx[1]
       );
       span = element("span");
-      attr(div0, "class", "ml-name ml-name-agent svelte-1elwqoj");
-      attr(span, "class", "ml-cursor svelte-1elwqoj");
+      attr(div0, "class", "ml-name ml-name-agent svelte-fojiti");
+      attr(span, "class", "ml-cursor svelte-fojiti");
       attr(span, "aria-hidden", "true");
-      attr(div1, "class", "ml-content ml-streaming svelte-1elwqoj");
-      attr(div2, "class", "ml-turn ml-turn-agent svelte-1elwqoj");
+      attr(div1, "class", "ml-content ml-streaming svelte-fojiti");
+      attr(div2, "class", "ml-turn ml-turn-agent svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3381,7 +3552,7 @@ function create_if_block_13(ctx) {
 function create_if_block3(ctx) {
   let div1;
   let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_lookup = new Map_1();
   let t0;
   let div0;
   let button0;
@@ -3406,7 +3577,7 @@ function create_if_block3(ctx) {
   );
   const get_key = (ctx2) => (
     /*p*/
-    ctx2[10].toolCallId
+    ctx2[11].toolCallId
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context2(ctx, each_value, i);
@@ -3426,10 +3597,10 @@ function create_if_block3(ctx) {
       t2 = space();
       button1 = element("button");
       t3 = text(t3_value);
-      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-1elwqoj");
-      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-1elwqoj");
-      attr(div0, "class", "ml-bulk-actions svelte-1elwqoj");
-      attr(div1, "class", "ml-pending-group svelte-1elwqoj");
+      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-fojiti");
+      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-fojiti");
+      attr(div0, "class", "ml-bulk-actions svelte-fojiti");
+      attr(div1, "class", "ml-pending-group svelte-fojiti");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3452,13 +3623,13 @@ function create_if_block3(ctx) {
             button0,
             "click",
             /*click_handler*/
-            ctx[6]
+            ctx[7]
           ),
           listen(
             button1,
             "click",
             /*click_handler_1*/
-            ctx[7]
+            ctx[8]
           )
         ];
         mounted = true;
@@ -3518,7 +3689,7 @@ function create_each_block2(key_1, ctx) {
     props: {
       p: (
         /*p*/
-        ctx[10]
+        ctx[11]
       ),
       plugin: (
         /*plugin*/
@@ -3545,7 +3716,7 @@ function create_each_block2(key_1, ctx) {
       if (dirty & /*pending*/
       4)
         diffreviewblock_changes.p = /*p*/
-        ctx[10];
+        ctx[11];
       if (dirty & /*plugin*/
       8)
         diffreviewblock_changes.plugin = /*plugin*/
@@ -3579,7 +3750,7 @@ function create_fragment3(ctx) {
   );
   let t0;
   let each_blocks = [];
-  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_lookup = new Map_1();
   let t1;
   let t2;
   let t3;
@@ -3587,14 +3758,14 @@ function create_fragment3(ctx) {
   let current;
   let mounted;
   let dispose;
-  let if_block0 = show_if && create_if_block_6(ctx);
+  let if_block0 = show_if && create_if_block_7(ctx);
   let each_value_1 = ensure_array_like(
     /*messages*/
     ctx[0]
   );
   const get_key = (ctx2) => (
     /*m*/
-    ctx2[13]
+    ctx2[14]
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
     let child_ctx = get_each_context_1(ctx, each_value_1, i);
@@ -3630,7 +3801,7 @@ function create_fragment3(ctx) {
         if_block2.c();
       t3 = space();
       create_component(changesummary.$$.fragment);
-      attr(div, "class", "ml-root svelte-1elwqoj");
+      attr(div, "class", "ml-root svelte-fojiti");
       attr(div, "role", "log");
       attr(div, "aria-live", "polite");
       attr(div, "aria-label", "Chat messages");
@@ -3653,14 +3824,14 @@ function create_fragment3(ctx) {
         if_block2.m(div, null);
       append(div, t3);
       mount_component(changesummary, div, null);
-      ctx[8](div);
+      ctx[9](div);
       current = true;
       if (!mounted) {
         dispose = listen(
           div,
           "scroll",
           /*onScroll*/
-          ctx[5]
+          ctx[6]
         );
         mounted = true;
       }
@@ -3674,7 +3845,7 @@ function create_fragment3(ctx) {
       if (show_if) {
         if (if_block0) {
         } else {
-          if_block0 = create_if_block_6(ctx2);
+          if_block0 = create_if_block_7(ctx2);
           if_block0.c();
           if_block0.m(div, t0);
         }
@@ -3682,8 +3853,8 @@ function create_fragment3(ctx) {
         if_block0.d(1);
         if_block0 = null;
       }
-      if (dirty & /*messages, isError, plugin*/
-      9) {
+      if (dirty & /*messages, isError, plugin, previewResult, firstArgHint, toolCallMap*/
+      41) {
         each_value_1 = ensure_array_like(
           /*messages*/
           ctx2[0]
@@ -3761,7 +3932,7 @@ function create_fragment3(ctx) {
       if (if_block2)
         if_block2.d();
       destroy_component(changesummary);
-      ctx[8](null);
+      ctx[9](null);
       mounted = false;
       dispose();
     }
@@ -3770,8 +3941,37 @@ function create_fragment3(ctx) {
 function isError(content) {
   return content.startsWith("\u26A0");
 }
+function firstArgHint(args) {
+  const val = Object.values(args ?? {})[0];
+  if (!val)
+    return "";
+  const s = String(val);
+  return s.length > 40 ? s.slice(0, 40) + "\u2026" : s;
+}
+function previewResult(content) {
+  try {
+    const json = JSON.parse(content);
+    if (Array.isArray(json)) {
+      if (json.length === 0)
+        return "no results";
+      const label2 = json[0]?.path !== void 0 ? "note" : "item";
+      return `${json.length} ${label2}${json.length === 1 ? "" : "s"}`;
+    }
+    if (json && typeof json === "object") {
+      if ("error" in json)
+        return `error: ${String(json.error).slice(0, 60)}`;
+      if ("status" in json)
+        return String(json.status);
+    }
+    if (typeof json === "string")
+      return json.slice(0, 80);
+  } catch {
+  }
+  return content.length > 80 ? content.slice(0, 80) + "\u2026" : content;
+}
 var func = (m) => m.role === "user" || m.role === "assistant";
 function instance3($$self, $$props, $$invalidate) {
+  let toolCallMap;
   let { messages } = $$props;
   let { streamBuf } = $$props;
   let { pending: pending2 } = $$props;
@@ -3805,12 +4005,20 @@ function instance3($$self, $$props, $$invalidate) {
     if ("plugin" in $$props2)
       $$invalidate(3, plugin = $$props2.plugin);
   };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty & /*messages*/
+    1) {
+      $:
+        $$invalidate(5, toolCallMap = new Map(messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).flatMap((m) => m.toolCalls.map((tc) => [tc.id, tc]))));
+    }
+  };
   return [
     messages,
     streamBuf,
     pending2,
     plugin,
     scrollEl,
+    toolCallMap,
     onScroll,
     click_handler,
     click_handler_1,
@@ -4031,7 +4239,7 @@ var ModeToggle = class extends SvelteComponent {
 var ModeToggle_default = ModeToggle;
 
 // src/ui/ConversationList.svelte
-var { Map: Map_1 } = globals;
+var { Map: Map_12 } = globals;
 function get_each_context3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[8] = list[i];
@@ -4051,7 +4259,7 @@ function get_each_context_12(ctx, list, i) {
 }
 function create_else_block3(ctx) {
   let each_blocks = [];
-  let each_1_lookup = new Map_1();
+  let each_1_lookup = new Map_12();
   let each_1_anchor;
   let each_value = ensure_array_like(
     /*groups*/
@@ -4302,7 +4510,7 @@ function create_each_block3(key_1, ctx) {
   let t0;
   let t1;
   let each_blocks = [];
-  let each_1_lookup = new Map_1();
+  let each_1_lookup = new Map_12();
   let each_1_anchor;
   let each_value_1 = ensure_array_like(
     /*group*/

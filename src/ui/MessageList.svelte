@@ -23,6 +23,37 @@
   }
 
   function isError(content: string) { return content.startsWith("⚠"); }
+
+  // Build a lookup from toolCallId → ToolCall so tool result rows can show the tool name + args
+  $: toolCallMap = new Map<string, { name: string; args: Record<string, unknown> }>(
+    messages
+      .filter((m: any) => m.role === "assistant" && m.toolCalls?.length)
+      .flatMap((m: any) => m.toolCalls.map((tc: any) => [tc.id, tc]))
+  );
+
+  function firstArgHint(args: Record<string, unknown>): string {
+    const val = Object.values(args ?? {})[0];
+    if (!val) return "";
+    const s = String(val);
+    return s.length > 40 ? s.slice(0, 40) + "…" : s;
+  }
+
+  function previewResult(content: string): string {
+    try {
+      const json = JSON.parse(content);
+      if (Array.isArray(json)) {
+        if (json.length === 0) return "no results";
+        const label = json[0]?.path !== undefined ? "note" : "item";
+        return `${json.length} ${label}${json.length === 1 ? "" : "s"}`;
+      }
+      if (json && typeof json === "object") {
+        if ("error" in json) return `error: ${String(json.error).slice(0, 60)}`;
+        if ("status" in json) return String(json.status);
+      }
+      if (typeof json === "string") return json.slice(0, 80);
+    } catch { /* not JSON */ }
+    return content.length > 80 ? content.slice(0, 80) + "…" : content;
+  }
 </script>
 
 <div class="ml-root" bind:this={scrollEl} on:scroll={onScroll} role="log" aria-live="polite" aria-label="Chat messages">
@@ -55,9 +86,15 @@
       </div>
 
     {:else if m.role === "tool"}
-      <div class="ml-tool-result">
+      {@const tc = toolCallMap.get(m.toolCallId ?? "")}
+      <div class="ml-tool-result" title={m.content}>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span class="ml-tool-label">tool result</span>
+        <span class="ml-tool-name">{tc?.name ?? "tool"}</span>
+        {#if tc?.args && firstArgHint(tc.args)}
+          <span class="ml-tool-arg">"{firstArgHint(tc.args)}"</span>
+        {/if}
+        <span class="ml-tool-sep">→</span>
+        <span class="ml-tool-preview">{previewResult(m.content)}</span>
       </div>
     {/if}
   {/each}
@@ -95,6 +132,19 @@
     display: flex;
     flex-direction: column;
     scroll-behavior: smooth;
+    /* Override Obsidian's global user-select: none */
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  /* Ensure all descendants are selectable too (Obsidian sets * { user-select: none }) */
+  .ml-root :global(*) {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  /* Buttons inside the chat should not be selectable */
+  .ml-root :global(button) {
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* ── Empty state ── */
@@ -174,8 +224,34 @@
     border-bottom: 1px solid var(--background-modifier-border);
     color: var(--text-faint);
     font-size: 11px;
+    font-family: var(--font-monospace);
+    overflow: hidden;
   }
-  .ml-tool-label { font-style: italic; }
+  .ml-tool-name {
+    color: var(--interactive-accent);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .ml-tool-arg {
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .ml-tool-sep {
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+  .ml-tool-preview {
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
 
   /* ── Pending diff group ── */
   .ml-pending-group {
