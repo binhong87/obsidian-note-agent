@@ -35,7 +35,12 @@ export async function* httpSSE(o: HttpOptions): AsyncIterable<{ data: string }> 
     signal: o.signal,
   });
   if (resp.status === 401 || resp.status === 403) throw new ProviderError("auth", `${resp.status}`);
-  if (resp.status === 429) throw new ProviderError("rate", await resp.text());
+  if (resp.status === 429) {
+    const raw = await resp.text();
+    let msg = raw;
+    try { msg = JSON.parse(raw)?.error?.message ?? raw; } catch { /* keep raw */ }
+    throw new ProviderError("rate", `Rate limited: ${msg}`);
+  }
   if (resp.status >= 400) {
     const t = await resp.text();
     if (/context|too long/i.test(t)) throw new ProviderError("context", t);
