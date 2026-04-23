@@ -40,6 +40,9 @@ export function markdown(node: HTMLElement, params: MarkdownParams) {
       navigator.clipboard.writeText(text).then(() => {
         btn.textContent = "✓ Copied";
         setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+      }).catch(() => {
+        btn.textContent = "Failed";
+        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
       });
     });
 
