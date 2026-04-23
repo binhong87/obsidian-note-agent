@@ -14,7 +14,9 @@
   let textarea: HTMLTextAreaElement;
   let showHistory = false;
 
-  const unsub = plugin.approvalQueue.onChange(list => (pending = list));
+  const unsub = plugin.approvalQueue.onChange(list => {
+    pending = list;
+  });
   onDestroy(unsub);
 
   function autoResize() {
@@ -42,7 +44,7 @@
         if (evt.type === "text") {
           streamBuf += (evt as any).text;
           // Don't sync messages here — streamBuf drives the live streaming view
-        } else if (["applied","rejected","tool","pending","done","stopped"].includes(evt.type)) {
+        } else if (["tool","pending","done","stopped"].includes(evt.type)) {
           messages = [...plugin.currentConversation.messages];
           streamBuf = "";
         } else if (evt.type === "error") {
@@ -88,7 +90,6 @@
       class="ac-btn ac-btn-ghost ac-history-toggle"
       class:ac-history-active={showHistory}
       on:click={() => (showHistory = !showHistory)}
-      title="Conversation history"
       aria-expanded={showHistory}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -115,7 +116,7 @@
   {/if}
 
   <!-- Message area -->
-  <MessageList {messages} {streamBuf} {pending} {plugin} />
+  <MessageList {messages} {streamBuf} {pending} {plugin} {busy} />
 
   <!-- Input area -->
   <div class="ac-input-wrap">
@@ -128,7 +129,6 @@
         rows="1"
         on:input={autoResize}
         on:keydown={onKeydown}
-        aria-label="Chat input"
       ></textarea>
 
       <div class="ac-input-footer">

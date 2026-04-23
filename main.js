@@ -455,15 +455,19 @@ async function* httpSSE(o) {
     let buf = "";
     while (true) {
       const { done, value } = await reader.read();
-      if (done)
-        break;
-      buf += dec.decode(value, { stream: true });
+      buf += done ? dec.decode() : dec.decode(value, { stream: true });
       let idx;
       while ((idx = buf.indexOf("\n\n")) >= 0) {
         const evt = buf.slice(0, idx);
         buf = buf.slice(idx + 2);
         for (const ev of parseSSE(evt + "\n\n"))
           yield ev;
+      }
+      if (done) {
+        if (buf.trim())
+          for (const ev of parseSSE(buf))
+            yield ev;
+        break;
       }
     }
     return;
@@ -940,18 +944,17 @@ function buildToolRegistry(ctx, mode) {
 
 // src/agent/approval-queue.ts
 var ApprovalQueue = class {
-  constructor() {
+  constructor(opts) {
     this.entries = [];
     this.listeners = /* @__PURE__ */ new Set();
+    this.commit = opts.commit;
   }
   enqueue(pw) {
-    return new Promise((resolve) => {
-      this.entries.push({ pw, resolve });
-      this.emit();
-    });
+    this.entries.push(pw);
+    this.emit();
   }
   list() {
-    return this.entries.map((e) => e.pw);
+    return this.entries.slice();
   }
   onChange(fn) {
     this.listeners.add(fn);
@@ -961,28 +964,34 @@ var ApprovalQueue = class {
     for (const l of this.listeners)
       l(this.list());
   }
-  approve(id) {
-    this.resolveOne(id, "applied");
+  async approve(id) {
+    const i = this.entries.findIndex((e) => e.toolCallId === id);
+    if (i < 0)
+      return;
+    const [pw] = this.entries.splice(i, 1);
+    await this.commit(pw);
+    this.emit();
   }
   reject(id) {
-    this.resolveOne(id, "rejected_by_user");
+    const i = this.entries.findIndex((e) => e.toolCallId === id);
+    if (i >= 0) {
+      this.entries.splice(i, 1);
+      this.emit();
+    }
   }
-  approveAll() {
-    while (this.entries.length)
-      this.resolveAt(0, "applied");
+  async approveAll() {
+    while (this.entries.length) {
+      const [pw] = this.entries.splice(0, 1);
+      await this.commit(pw);
+    }
+    this.emit();
   }
   rejectAll() {
-    while (this.entries.length)
-      this.resolveAt(0, "rejected_by_user");
+    this.entries = [];
+    this.emit();
   }
-  resolveOne(id, s) {
-    const i = this.entries.findIndex((e) => e.pw.toolCallId === id);
-    if (i >= 0)
-      this.resolveAt(i, s);
-  }
-  resolveAt(i, s) {
-    const [e] = this.entries.splice(i, 1);
-    e.resolve({ status: s });
+  clear() {
+    this.entries = [];
     this.emit();
   }
 };
@@ -991,30 +1000,63 @@ var ApprovalQueue = class {
 function approxTokens(s) {
   return Math.ceil(s.length / 4);
 }
+function msgTokens(m) {
+  let n = approxTokens(m.content ?? "") + 4;
+  if (m.toolCalls?.length) {
+    for (const tc of m.toolCalls)
+      n += approxTokens(tc.name) + approxTokens(JSON.stringify(tc.args)) + 8;
+  }
+  return n;
+}
 function totalTokens(msgs) {
   let n = 0;
   for (const m of msgs)
-    n += approxTokens(m.content ?? "") + 4;
+    n += msgTokens(m);
   return n;
+}
+function groupRest(rest) {
+  const groups = [];
+  let i = 0;
+  while (i < rest.length) {
+    const m = rest[i];
+    if (m.role === "assistant" && m.toolCalls?.length) {
+      const msgs = [m];
+      let j = i + 1;
+      while (j < rest.length && rest[j].role === "tool") {
+        msgs.push(rest[j]);
+        j++;
+      }
+      groups.push({ msgs, tokens: msgs.reduce((a, x) => a + msgTokens(x), 0) });
+      i = j;
+    } else {
+      groups.push({ msgs: [m], tokens: msgTokens(m) });
+      i++;
+    }
+  }
+  return groups;
 }
 function trimHistory(messages, budget) {
   if (totalTokens(messages) <= budget)
     return messages;
   const system = messages.filter((m) => m.role === "system");
   const rest = messages.filter((m) => m.role !== "system");
+  const groups = groupRest(rest);
   const keep = [];
   let used = totalTokens(system);
-  for (let i = rest.length - 1; i >= 0; i--) {
-    const t = approxTokens(rest[i].content ?? "") + 4;
-    if (used + t > budget)
+  for (let i = groups.length - 1; i >= 0; i--) {
+    if (used + groups[i].tokens > budget)
       break;
-    keep.unshift(rest[i]);
-    used += t;
+    keep.unshift(groups[i]);
+    used += groups[i].tokens;
   }
-  if (keep.length < rest.length) {
-    keep.unshift({ role: "system", content: `[Earlier ${rest.length - keep.length} messages summarized for brevity.]` });
+  const keptMsgs = keep.flatMap((g) => g.msgs);
+  const droppedGroups = groups.length - keep.length;
+  const out = [...system];
+  if (droppedGroups > 0) {
+    out.push({ role: "system", content: `[Earlier ${droppedGroups} message group(s) summarized for brevity.]` });
   }
-  return [...system, ...keep];
+  out.push(...keptMsgs);
+  return out;
 }
 
 // src/agent/agent-loop.ts
@@ -1088,6 +1130,10 @@ var AgentLoop = class {
       }
       if (stoppedEarly)
         return;
+      if (this.abort.signal.aborted) {
+        yield { type: "stopped", reason: "cancelled" };
+        return;
+      }
       conversation.append(assistantMsg);
       const calls = assistantMsg.toolCalls ?? [];
       if (calls.length === 0) {
@@ -1107,17 +1153,9 @@ var AgentLoop = class {
         if (result.startsWith(PENDING_PREFIX)) {
           const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
           const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
+          approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
+          conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "queued" }) });
           yield { type: "pending", toolCallId: tc.id, pending: payload, diff };
-          const decision = await approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
-          if (decision.status === "applied") {
-            if (this.opts.commitWrite)
-              await this.opts.commitWrite(payload);
-            conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "applied" }) });
-            yield { type: "applied", toolCallId: tc.id };
-          } else {
-            conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "rejected_by_user" }) });
-            yield { type: "rejected", toolCallId: tc.id };
-          }
         } else {
           conversation.append({ role: "tool", toolCallId: tc.id, content: result });
           yield { type: "tool", toolCallId: tc.id, result };
@@ -3044,33 +3082,47 @@ function markdown(node, params) {
 var { Map: Map_1 } = globals;
 function get_each_context2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[11] = list[i];
+  child_ctx[13] = list[i];
   return child_ctx;
 }
 function get_each_context_1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[14] = list[i];
+  child_ctx[16] = list[i];
+  const constants_0 = (
+    /*pending*/
+    child_ctx[2].find(function func_1(...args) {
+      return (
+        /*func_1*/
+        ctx[8](
+          /*tc*/
+          child_ctx[16],
+          ...args
+        )
+      );
+    })
+  );
+  child_ctx[17] = constants_0;
   return child_ctx;
 }
 function get_if_ctx(ctx) {
   const child_ctx = ctx.slice();
   const constants_0 = (
     /*toolCallMap*/
-    child_ctx[5].get(
+    child_ctx[6].get(
       /*m*/
-      child_ctx[14].toolCallId ?? ""
+      child_ctx[13].toolCallId ?? ""
     )
   );
-  child_ctx[17] = constants_0;
+  child_ctx[16] = constants_0;
   return child_ctx;
 }
-function create_if_block_7(ctx) {
+function create_if_block_9(ctx) {
   let div1;
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-1d1wfbn" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-1d1wfbn">Start a conversation</p> <p class="ml-empty-hint svelte-1d1wfbn">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
-      attr(div1, "class", "ml-empty svelte-1d1wfbn");
+      div1.innerHTML = `<div class="ml-empty-icon svelte-15mw9ke" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-15mw9ke">Start a conversation</p> <p class="ml-empty-hint svelte-15mw9ke">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      attr(div1, "class", "ml-empty svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3082,7 +3134,7 @@ function create_if_block_7(ctx) {
     }
   };
 }
-function create_if_block_5(ctx) {
+function create_if_block_7(ctx) {
   let div;
   let svg;
   let circle;
@@ -3091,15 +3143,15 @@ function create_if_block_5(ctx) {
   let span0;
   let t1_value = (
     /*tc*/
-    (ctx[17]?.name ?? "tool") + ""
+    (ctx[16]?.name ?? "tool") + ""
   );
   let t1;
   let t2;
   let show_if = (
     /*tc*/
-    ctx[17]?.args && firstArgHint(
+    ctx[16]?.args && firstArgHint(
       /*tc*/
-      ctx[17].args
+      ctx[16].args
     )
   );
   let t3;
@@ -3108,11 +3160,11 @@ function create_if_block_5(ctx) {
   let span2;
   let t6_value = previewResult(
     /*m*/
-    ctx[14].content
+    ctx[13].content
   ) + "";
   let t6;
   let div_title_value;
-  let if_block = show_if && create_if_block_6(ctx);
+  let if_block = show_if && create_if_block_8(ctx);
   return {
     c() {
       div = element("div");
@@ -3147,12 +3199,12 @@ function create_if_block_5(ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(span0, "class", "ml-tool-name svelte-1d1wfbn");
-      attr(span1, "class", "ml-tool-sep svelte-1d1wfbn");
-      attr(span2, "class", "ml-tool-preview svelte-1d1wfbn");
-      attr(div, "class", "ml-tool-result svelte-1d1wfbn");
+      attr(span0, "class", "ml-tool-name svelte-15mw9ke");
+      attr(span1, "class", "ml-tool-sep svelte-15mw9ke");
+      attr(span2, "class", "ml-tool-preview svelte-15mw9ke");
+      attr(div, "class", "ml-tool-result svelte-15mw9ke");
       attr(div, "title", div_title_value = /*m*/
-      ctx[14].content);
+      ctx[13].content);
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3173,21 +3225,21 @@ function create_if_block_5(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty & /*toolCallMap, messages*/
-      33 && t1_value !== (t1_value = /*tc*/
-      (ctx2[17]?.name ?? "tool") + ""))
+      65 && t1_value !== (t1_value = /*tc*/
+      (ctx2[16]?.name ?? "tool") + ""))
         set_data(t1, t1_value);
       if (dirty & /*toolCallMap, messages*/
-      33)
+      65)
         show_if = /*tc*/
-        ctx2[17]?.args && firstArgHint(
+        ctx2[16]?.args && firstArgHint(
           /*tc*/
-          ctx2[17].args
+          ctx2[16].args
         );
       if (show_if) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block_6(ctx2);
+          if_block = create_if_block_8(ctx2);
           if_block.c();
           if_block.m(div, t3);
         }
@@ -3198,15 +3250,17 @@ function create_if_block_5(ctx) {
       if (dirty & /*messages*/
       1 && t6_value !== (t6_value = previewResult(
         /*m*/
-        ctx2[14].content
+        ctx2[13].content
       ) + ""))
         set_data(t6, t6_value);
       if (dirty & /*messages*/
       1 && div_title_value !== (div_title_value = /*m*/
-      ctx2[14].content)) {
+      ctx2[13].content)) {
         attr(div, "title", div_title_value);
       }
     },
+    i: noop,
+    o: noop,
     d(detaching) {
       if (detaching) {
         detach(div);
@@ -3216,11 +3270,16 @@ function create_if_block_5(ctx) {
     }
   };
 }
-function create_if_block_32(ctx) {
+function create_if_block_4(ctx) {
   let div1;
   let div0;
   let t1;
   let show_if;
+  let t2;
+  let each_blocks = [];
+  let each_1_lookup = new Map_1();
+  let each_1_anchor;
+  let current;
   function select_block_type_1(ctx2, dirty) {
     if (dirty & /*messages*/
     1)
@@ -3228,14 +3287,27 @@ function create_if_block_32(ctx) {
     if (show_if == null)
       show_if = !!isError(
         /*m*/
-        ctx2[14].content
+        ctx2[13].content
       );
     if (show_if)
-      return create_if_block_4;
+      return create_if_block_6;
     return create_else_block2;
   }
   let current_block_type = select_block_type_1(ctx, -1);
   let if_block = current_block_type(ctx);
+  let each_value_1 = ensure_array_like(
+    /*m*/
+    ctx[13].toolCalls ?? []
+  );
+  const get_key = (ctx2) => (
+    /*tc*/
+    ctx2[16].id
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+  }
   return {
     c() {
       div1 = element("div");
@@ -3243,11 +3315,16 @@ function create_if_block_32(ctx) {
       div0.textContent = "Agent";
       t1 = space();
       if_block.c();
-      attr(div0, "class", "ml-name ml-name-agent svelte-1d1wfbn");
-      attr(div1, "class", "ml-turn ml-turn-agent svelte-1d1wfbn");
+      t2 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+      attr(div0, "class", "ml-name ml-name-agent svelte-15mw9ke");
+      attr(div1, "class", "ml-turn ml-turn-agent svelte-15mw9ke");
       toggle_class(div1, "ml-error", isError(
         /*m*/
-        ctx[14].content
+        ctx[13].content
       ));
     },
     m(target, anchor) {
@@ -3255,6 +3332,14 @@ function create_if_block_32(ctx) {
       append(div1, div0);
       append(div1, t1);
       if_block.m(div1, null);
+      insert(target, t2, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+      current = true;
     },
     p(ctx2, dirty) {
       if (current_block_type === (current_block_type = select_block_type_1(ctx2, dirty)) && if_block) {
@@ -3267,30 +3352,59 @@ function create_if_block_32(ctx) {
           if_block.m(div1, null);
         }
       }
-      if (dirty & /*isError, messages*/
+      if (!current || dirty & /*isError, messages*/
       1) {
         toggle_class(div1, "ml-error", isError(
           /*m*/
-          ctx2[14].content
+          ctx2[13].content
         ));
       }
+      if (dirty & /*pending, messages, plugin*/
+      13) {
+        each_value_1 = ensure_array_like(
+          /*m*/
+          ctx2[13].toolCalls ?? []
+        );
+        group_outros();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block_1, each_1_anchor, get_each_context_1);
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      for (let i = 0; i < each_value_1.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
+      current = true;
+    },
+    o(local) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
+      current = false;
     },
     d(detaching) {
       if (detaching) {
         detach(div1);
+        detach(t2);
+        detach(each_1_anchor);
       }
       if_block.d();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
     }
   };
 }
-function create_if_block_22(ctx) {
+function create_if_block_32(ctx) {
   let div2;
   let div0;
   let t1;
   let div1;
   let t2_value = (
     /*m*/
-    ctx[14].content + ""
+    ctx[13].content + ""
   );
   let t2;
   return {
@@ -3301,9 +3415,9 @@ function create_if_block_22(ctx) {
       t1 = space();
       div1 = element("div");
       t2 = text(t2_value);
-      attr(div0, "class", "ml-name ml-name-user svelte-1d1wfbn");
-      attr(div1, "class", "ml-content svelte-1d1wfbn");
-      attr(div2, "class", "ml-turn ml-turn-user svelte-1d1wfbn");
+      attr(div0, "class", "ml-name ml-name-user svelte-15mw9ke");
+      attr(div1, "class", "ml-content svelte-15mw9ke");
+      attr(div2, "class", "ml-turn ml-turn-user svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3315,9 +3429,11 @@ function create_if_block_22(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t2_value !== (t2_value = /*m*/
-      ctx2[14].content + ""))
+      ctx2[13].content + ""))
         set_data(t2, t2_value);
     },
+    i: noop,
+    o: noop,
     d(detaching) {
       if (detaching) {
         detach(div2);
@@ -3325,12 +3441,12 @@ function create_if_block_22(ctx) {
     }
   };
 }
-function create_if_block_6(ctx) {
+function create_if_block_8(ctx) {
   let span;
   let t0;
   let t1_value = firstArgHint(
     /*tc*/
-    ctx[17].args
+    ctx[16].args
   ) + "";
   let t1;
   let t2;
@@ -3340,7 +3456,7 @@ function create_if_block_6(ctx) {
       t0 = text('"');
       t1 = text(t1_value);
       t2 = text('"');
-      attr(span, "class", "ml-tool-arg svelte-1d1wfbn");
+      attr(span, "class", "ml-tool-arg svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, span, anchor);
@@ -3350,9 +3466,9 @@ function create_if_block_6(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty & /*toolCallMap, messages*/
-      33 && t1_value !== (t1_value = firstArgHint(
+      65 && t1_value !== (t1_value = firstArgHint(
         /*tc*/
-        ctx2[17].args
+        ctx2[16].args
       ) + ""))
         set_data(t1, t1_value);
     },
@@ -3371,7 +3487,7 @@ function create_else_block2(ctx) {
   return {
     c() {
       div = element("div");
-      attr(div, "class", "ml-content svelte-1d1wfbn");
+      attr(div, "class", "ml-content svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3379,7 +3495,7 @@ function create_else_block2(ctx) {
         dispose = action_destroyer(markdown_action = markdown.call(null, div, {
           text: (
             /*m*/
-            ctx[14].content
+            ctx[13].content
           ),
           plugin: (
             /*plugin*/
@@ -3396,7 +3512,7 @@ function create_else_block2(ctx) {
         markdown_action.update.call(null, {
           text: (
             /*m*/
-            ctx[14].content
+            ctx[13].content
           ),
           plugin: (
             /*plugin*/
@@ -3413,18 +3529,18 @@ function create_else_block2(ctx) {
     }
   };
 }
-function create_if_block_4(ctx) {
+function create_if_block_6(ctx) {
   let div;
   let t_value = (
     /*m*/
-    ctx[14].content + ""
+    ctx[13].content + ""
   );
   let t;
   return {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "ml-content ml-content-error svelte-1d1wfbn");
+      attr(div, "class", "ml-content ml-content-error svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3433,7 +3549,7 @@ function create_if_block_4(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t_value !== (t_value = /*m*/
-      ctx2[14].content + ""))
+      ctx2[13].content + ""))
         set_data(t, t_value);
     },
     d(detaching) {
@@ -3443,33 +3559,64 @@ function create_if_block_4(ctx) {
     }
   };
 }
+function create_if_block_5(ctx) {
+  let diffreviewblock;
+  let current;
+  diffreviewblock = new DiffReviewBlock_default({
+    props: {
+      p: (
+        /*pw*/
+        ctx[17]
+      ),
+      plugin: (
+        /*plugin*/
+        ctx[3]
+      )
+    }
+  });
+  return {
+    c() {
+      create_component(diffreviewblock.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(diffreviewblock, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const diffreviewblock_changes = {};
+      if (dirty & /*pending, messages*/
+      5)
+        diffreviewblock_changes.p = /*pw*/
+        ctx2[17];
+      if (dirty & /*plugin*/
+      8)
+        diffreviewblock_changes.plugin = /*plugin*/
+        ctx2[3];
+      diffreviewblock.$set(diffreviewblock_changes);
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(diffreviewblock.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(diffreviewblock.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(diffreviewblock, detaching);
+    }
+  };
+}
 function create_each_block_1(key_1, ctx) {
   let first;
   let if_block_anchor;
-  function select_block_type(ctx2, dirty) {
-    if (
-      /*m*/
-      ctx2[14].role === "user"
-    )
-      return create_if_block_22;
-    if (
-      /*m*/
-      ctx2[14].role === "assistant"
-    )
-      return create_if_block_32;
-    if (
-      /*m*/
-      ctx2[14].role === "tool"
-    )
-      return create_if_block_5;
-  }
-  function select_block_ctx(ctx2, type) {
-    if (type === create_if_block_5)
-      return get_if_ctx(ctx2);
-    return ctx2;
-  }
-  let current_block_type = select_block_type(ctx, -1);
-  let if_block = current_block_type && current_block_type(select_block_ctx(ctx, current_block_type));
+  let current;
+  let if_block = (
+    /*pw*/
+    ctx[17] && create_if_block_5(ctx)
+  );
   return {
     key: key_1,
     first: null,
@@ -3485,28 +3632,173 @@ function create_each_block_1(key_1, ctx) {
       if (if_block)
         if_block.m(target, anchor);
       insert(target, if_block_anchor, anchor);
+      current = true;
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block) {
-        if_block.p(select_block_ctx(ctx, current_block_type), dirty);
-      } else {
-        if (if_block)
-          if_block.d(1);
-        if_block = current_block_type && current_block_type(select_block_ctx(ctx, current_block_type));
+      if (
+        /*pw*/
+        ctx[17]
+      ) {
         if (if_block) {
+          if_block.p(ctx, dirty);
+          if (dirty & /*pending, messages*/
+          5) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block_5(ctx);
           if_block.c();
+          transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
         }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
       }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
     },
     d(detaching) {
       if (detaching) {
         detach(first);
         detach(if_block_anchor);
       }
-      if (if_block) {
+      if (if_block)
         if_block.d(detaching);
+    }
+  };
+}
+function create_each_block2(key_1, ctx) {
+  let first;
+  let current_block_type_index;
+  let if_block;
+  let if_block_anchor;
+  let current;
+  const if_block_creators = [create_if_block_32, create_if_block_4, create_if_block_7];
+  const if_blocks = [];
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*m*/
+      ctx2[13].role === "user"
+    )
+      return 0;
+    if (
+      /*m*/
+      ctx2[13].role === "assistant"
+    )
+      return 1;
+    if (
+      /*m*/
+      ctx2[13].role === "tool"
+    )
+      return 2;
+    return -1;
+  }
+  function select_block_ctx(ctx2, index) {
+    if (index === 2)
+      return get_if_ctx(ctx2);
+    return ctx2;
+  }
+  if (~(current_block_type_index = select_block_type(ctx, -1))) {
+    if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](select_block_ctx(ctx, current_block_type_index));
+  }
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      first = empty();
+      if (if_block)
+        if_block.c();
+      if_block_anchor = empty();
+      this.first = first;
+    },
+    m(target, anchor) {
+      insert(target, first, anchor);
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].m(target, anchor);
+      }
+      insert(target, if_block_anchor, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      let previous_block_index = current_block_type_index;
+      current_block_type_index = select_block_type(ctx, dirty);
+      if (current_block_type_index === previous_block_index) {
+        if (~current_block_type_index) {
+          if_blocks[current_block_type_index].p(select_block_ctx(ctx, current_block_type_index), dirty);
+        }
+      } else {
+        if (if_block) {
+          group_outros();
+          transition_out(if_blocks[previous_block_index], 1, 1, () => {
+            if_blocks[previous_block_index] = null;
+          });
+          check_outros();
+        }
+        if (~current_block_type_index) {
+          if_block = if_blocks[current_block_type_index];
+          if (!if_block) {
+            if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](select_block_ctx(ctx, current_block_type_index));
+            if_block.c();
+          } else {
+            if_block.p(select_block_ctx(ctx, current_block_type_index), dirty);
+          }
+          transition_in(if_block, 1);
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        } else {
+          if_block = null;
+        }
+      }
+    },
+    i(local) {
+      if (current)
+        return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(first);
+        detach(if_block_anchor);
+      }
+      if (~current_block_type_index) {
+        if_blocks[current_block_type_index].d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_22(ctx) {
+  let div2;
+  return {
+    c() {
+      div2 = element("div");
+      div2.innerHTML = `<div class="ml-name ml-name-agent svelte-15mw9ke">Agent</div> <div class="ml-thinking svelte-15mw9ke" aria-live="polite" aria-label="Agent is thinking"><span class="ml-dot svelte-15mw9ke"></span><span class="ml-dot svelte-15mw9ke"></span><span class="ml-dot svelte-15mw9ke"></span></div>`;
+      attr(div2, "class", "ml-turn ml-turn-agent ml-thinking-turn svelte-15mw9ke");
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div2);
       }
     }
   };
@@ -3530,11 +3822,11 @@ function create_if_block_13(ctx) {
       div1 = element("div");
       t2 = space();
       span = element("span");
-      attr(div0, "class", "ml-name ml-name-agent svelte-1d1wfbn");
-      attr(div1, "class", "ml-content svelte-1d1wfbn");
-      attr(span, "class", "ml-cursor svelte-1d1wfbn");
+      attr(div0, "class", "ml-name ml-name-agent svelte-15mw9ke");
+      attr(div1, "class", "ml-content svelte-15mw9ke");
+      attr(span, "class", "ml-cursor svelte-15mw9ke");
       attr(span, "aria-hidden", "true");
-      attr(div2, "class", "ml-turn ml-turn-agent svelte-1d1wfbn");
+      attr(div2, "class", "ml-turn ml-turn-agent svelte-15mw9ke");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3581,194 +3873,75 @@ function create_if_block_13(ctx) {
   };
 }
 function create_if_block3(ctx) {
-  let div1;
-  let each_blocks = [];
-  let each_1_lookup = new Map_1();
-  let t0;
-  let div0;
+  let div;
   let button0;
-  let t1_value = (
+  let t0_value = (
     /*plugin*/
     ctx[3].i18n.t("diff.applyAll") + ""
   );
+  let t0;
   let t1;
-  let t2;
   let button1;
-  let t3_value = (
+  let t2_value = (
     /*plugin*/
     ctx[3].i18n.t("diff.rejectAll") + ""
   );
-  let t3;
-  let current;
+  let t2;
   let mounted;
   let dispose;
-  let each_value = ensure_array_like(
-    /*pending*/
-    ctx[2]
-  );
-  const get_key = (ctx2) => (
-    /*p*/
-    ctx2[11].toolCallId
-  );
-  for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context2(ctx, each_value, i);
-    let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block2(key, child_ctx));
-  }
   return {
     c() {
-      div1 = element("div");
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      t0 = space();
-      div0 = element("div");
+      div = element("div");
       button0 = element("button");
-      t1 = text(t1_value);
-      t2 = space();
+      t0 = text(t0_value);
+      t1 = space();
       button1 = element("button");
-      t3 = text(t3_value);
-      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-1d1wfbn");
-      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-1d1wfbn");
-      attr(div0, "class", "ml-bulk-actions svelte-1d1wfbn");
-      attr(div1, "class", "ml-pending-group svelte-1d1wfbn");
+      t2 = text(t2_value);
+      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-15mw9ke");
+      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-15mw9ke");
+      attr(div, "class", "ml-bulk-actions svelte-15mw9ke");
     },
     m(target, anchor) {
-      insert(target, div1, anchor);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div1, null);
-        }
-      }
-      append(div1, t0);
-      append(div1, div0);
-      append(div0, button0);
-      append(button0, t1);
-      append(div0, t2);
-      append(div0, button1);
-      append(button1, t3);
-      current = true;
+      insert(target, div, anchor);
+      append(div, button0);
+      append(button0, t0);
+      append(div, t1);
+      append(div, button1);
+      append(button1, t2);
       if (!mounted) {
         dispose = [
           listen(
             button0,
             "click",
             /*click_handler*/
-            ctx[7]
+            ctx[9]
           ),
           listen(
             button1,
             "click",
             /*click_handler_1*/
-            ctx[8]
+            ctx[10]
           )
         ];
         mounted = true;
       }
     },
     p(ctx2, dirty) {
-      if (dirty & /*pending, plugin*/
-      12) {
-        each_value = ensure_array_like(
-          /*pending*/
-          ctx2[2]
-        );
-        group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div1, outro_and_destroy_block, create_each_block2, t0, get_each_context2);
-        check_outros();
-      }
-      if ((!current || dirty & /*plugin*/
-      8) && t1_value !== (t1_value = /*plugin*/
+      if (dirty & /*plugin*/
+      8 && t0_value !== (t0_value = /*plugin*/
       ctx2[3].i18n.t("diff.applyAll") + ""))
-        set_data(t1, t1_value);
-      if ((!current || dirty & /*plugin*/
-      8) && t3_value !== (t3_value = /*plugin*/
+        set_data(t0, t0_value);
+      if (dirty & /*plugin*/
+      8 && t2_value !== (t2_value = /*plugin*/
       ctx2[3].i18n.t("diff.rejectAll") + ""))
-        set_data(t3, t3_value);
-    },
-    i(local) {
-      if (current)
-        return;
-      for (let i = 0; i < each_value.length; i += 1) {
-        transition_in(each_blocks[i]);
-      }
-      current = true;
-    },
-    o(local) {
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        transition_out(each_blocks[i]);
-      }
-      current = false;
+        set_data(t2, t2_value);
     },
     d(detaching) {
       if (detaching) {
-        detach(div1);
-      }
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].d();
+        detach(div);
       }
       mounted = false;
       run_all(dispose);
-    }
-  };
-}
-function create_each_block2(key_1, ctx) {
-  let first;
-  let diffreviewblock;
-  let current;
-  diffreviewblock = new DiffReviewBlock_default({
-    props: {
-      p: (
-        /*p*/
-        ctx[11]
-      ),
-      plugin: (
-        /*plugin*/
-        ctx[3]
-      )
-    }
-  });
-  return {
-    key: key_1,
-    first: null,
-    c() {
-      first = empty();
-      create_component(diffreviewblock.$$.fragment);
-      this.first = first;
-    },
-    m(target, anchor) {
-      insert(target, first, anchor);
-      mount_component(diffreviewblock, target, anchor);
-      current = true;
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      const diffreviewblock_changes = {};
-      if (dirty & /*pending*/
-      4)
-        diffreviewblock_changes.p = /*p*/
-        ctx[11];
-      if (dirty & /*plugin*/
-      8)
-        diffreviewblock_changes.plugin = /*plugin*/
-        ctx[3];
-      diffreviewblock.$set(diffreviewblock_changes);
-    },
-    i(local) {
-      if (current)
-        return;
-      transition_in(diffreviewblock.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(diffreviewblock.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(first);
-      }
-      destroy_component(diffreviewblock, detaching);
     }
   };
 }
@@ -3789,24 +3962,34 @@ function create_fragment3(ctx) {
   let current;
   let mounted;
   let dispose;
-  let if_block0 = show_if && create_if_block_7(ctx);
-  let each_value_1 = ensure_array_like(
+  let if_block0 = show_if && create_if_block_9(ctx);
+  let each_value = ensure_array_like(
     /*messages*/
     ctx[0]
   );
   const get_key = (ctx2) => (
     /*m*/
-    ctx2[14]
+    ctx2[13]
   );
-  for (let i = 0; i < each_value_1.length; i += 1) {
-    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+  for (let i = 0; i < each_value.length; i += 1) {
+    let child_ctx = get_each_context2(ctx, each_value, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block2(key, child_ctx));
   }
-  let if_block1 = (
-    /*streamBuf*/
-    ctx[1] && create_if_block_13(ctx)
-  );
+  function select_block_type_2(ctx2, dirty) {
+    if (
+      /*streamBuf*/
+      ctx2[1]
+    )
+      return create_if_block_13;
+    if (
+      /*busy*/
+      ctx2[4]
+    )
+      return create_if_block_22;
+  }
+  let current_block_type = select_block_type_2(ctx, -1);
+  let if_block1 = current_block_type && current_block_type(ctx);
   let if_block2 = (
     /*pending*/
     ctx[2].length && create_if_block3(ctx)
@@ -3832,10 +4015,9 @@ function create_fragment3(ctx) {
         if_block2.c();
       t3 = space();
       create_component(changesummary.$$.fragment);
-      attr(div, "class", "ml-root svelte-1d1wfbn");
+      attr(div, "class", "ml-root svelte-15mw9ke");
       attr(div, "role", "log");
       attr(div, "aria-live", "polite");
-      attr(div, "aria-label", "Chat messages");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3855,14 +4037,14 @@ function create_fragment3(ctx) {
         if_block2.m(div, null);
       append(div, t3);
       mount_component(changesummary, div, null);
-      ctx[9](div);
+      ctx[11](div);
       current = true;
       if (!mounted) {
         dispose = listen(
           div,
           "scroll",
           /*onScroll*/
-          ctx[6]
+          ctx[7]
         );
         mounted = true;
       }
@@ -3876,7 +4058,7 @@ function create_fragment3(ctx) {
       if (show_if) {
         if (if_block0) {
         } else {
-          if_block0 = create_if_block_7(ctx2);
+          if_block0 = create_if_block_9(ctx2);
           if_block0.c();
           if_block0.m(div, t0);
         }
@@ -3884,28 +4066,26 @@ function create_fragment3(ctx) {
         if_block0.d(1);
         if_block0 = null;
       }
-      if (dirty & /*messages, isError, plugin, previewResult, firstArgHint, toolCallMap*/
-      41) {
-        each_value_1 = ensure_array_like(
+      if (dirty & /*messages, pending, plugin, isError, previewResult, firstArgHint, toolCallMap*/
+      77) {
+        each_value = ensure_array_like(
           /*messages*/
           ctx2[0]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1, t1, get_each_context_1);
+        group_outros();
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, div, outro_and_destroy_block, create_each_block2, t1, get_each_context2);
+        check_outros();
       }
-      if (
-        /*streamBuf*/
-        ctx2[1]
-      ) {
+      if (current_block_type === (current_block_type = select_block_type_2(ctx2, dirty)) && if_block1) {
+        if_block1.p(ctx2, dirty);
+      } else {
+        if (if_block1)
+          if_block1.d(1);
+        if_block1 = current_block_type && current_block_type(ctx2);
         if (if_block1) {
-          if_block1.p(ctx2, dirty);
-        } else {
-          if_block1 = create_if_block_13(ctx2);
           if_block1.c();
           if_block1.m(div, t2);
         }
-      } else if (if_block1) {
-        if_block1.d(1);
-        if_block1 = null;
       }
       if (
         /*pending*/
@@ -3913,22 +4093,14 @@ function create_fragment3(ctx) {
       ) {
         if (if_block2) {
           if_block2.p(ctx2, dirty);
-          if (dirty & /*pending*/
-          4) {
-            transition_in(if_block2, 1);
-          }
         } else {
           if_block2 = create_if_block3(ctx2);
           if_block2.c();
-          transition_in(if_block2, 1);
           if_block2.m(div, t3);
         }
       } else if (if_block2) {
-        group_outros();
-        transition_out(if_block2, 1, 1, () => {
-          if_block2 = null;
-        });
-        check_outros();
+        if_block2.d(1);
+        if_block2 = null;
       }
       const changesummary_changes = {};
       if (dirty & /*plugin*/
@@ -3940,12 +4112,16 @@ function create_fragment3(ctx) {
     i(local) {
       if (current)
         return;
-      transition_in(if_block2);
+      for (let i = 0; i < each_value.length; i += 1) {
+        transition_in(each_blocks[i]);
+      }
       transition_in(changesummary.$$.fragment, local);
       current = true;
     },
     o(local) {
-      transition_out(if_block2);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        transition_out(each_blocks[i]);
+      }
       transition_out(changesummary.$$.fragment, local);
       current = false;
     },
@@ -3958,12 +4134,13 @@ function create_fragment3(ctx) {
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].d();
       }
-      if (if_block1)
+      if (if_block1) {
         if_block1.d();
+      }
       if (if_block2)
         if_block2.d();
       destroy_component(changesummary);
-      ctx[9](null);
+      ctx[11](null);
       mounted = false;
       dispose();
     }
@@ -4007,23 +4184,27 @@ function instance3($$self, $$props, $$invalidate) {
   let { streamBuf } = $$props;
   let { pending: pending2 } = $$props;
   let { plugin } = $$props;
+  let { busy = false } = $$props;
   let scrollEl;
   let userScrolledUp = false;
   afterUpdate(() => {
-    if (!userScrolledUp && scrollEl)
-      $$invalidate(4, scrollEl.scrollTop = scrollEl.scrollHeight, scrollEl);
+    if (!scrollEl)
+      return;
+    if (!userScrolledUp)
+      $$invalidate(5, scrollEl.scrollTop = scrollEl.scrollHeight, scrollEl);
   });
   function onScroll() {
     if (!scrollEl)
       return;
     userScrolledUp = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight > 60;
   }
+  const func_1 = (tc, p) => p.toolCallId === tc.id;
   const click_handler = () => plugin.approvalQueue.approveAll();
   const click_handler_1 = () => plugin.approvalQueue.rejectAll();
   function div_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       scrollEl = $$value;
-      $$invalidate(4, scrollEl);
+      $$invalidate(5, scrollEl);
     });
   }
   $$self.$$set = ($$props2) => {
@@ -4035,12 +4216,14 @@ function instance3($$self, $$props, $$invalidate) {
       $$invalidate(2, pending2 = $$props2.pending);
     if ("plugin" in $$props2)
       $$invalidate(3, plugin = $$props2.plugin);
+    if ("busy" in $$props2)
+      $$invalidate(4, busy = $$props2.busy);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*messages*/
     1) {
       $:
-        $$invalidate(5, toolCallMap = new Map(messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).flatMap((m) => m.toolCalls.map((tc) => [tc.id, tc]))));
+        $$invalidate(6, toolCallMap = new Map(messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).flatMap((m) => m.toolCalls.map((tc) => [tc.id, tc]))));
     }
   };
   return [
@@ -4048,9 +4231,11 @@ function instance3($$self, $$props, $$invalidate) {
     streamBuf,
     pending2,
     plugin,
+    busy,
     scrollEl,
     toolCallMap,
     onScroll,
+    func_1,
     click_handler,
     click_handler_1,
     div_binding
@@ -4063,7 +4248,8 @@ var MessageList = class extends SvelteComponent {
       messages: 0,
       streamBuf: 1,
       pending: 2,
-      plugin: 3
+      plugin: 3,
+      busy: 4
     });
   }
 };
@@ -4635,7 +4821,6 @@ function create_fragment5(ctx) {
       attr(button, "class", "cl-new-btn svelte-19fxzhc");
       attr(div, "class", "cl-root svelte-19fxzhc");
       attr(div, "role", "navigation");
-      attr(div, "aria-label", "Conversation history");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -5090,6 +5275,10 @@ function create_fragment6(ctx) {
       plugin: (
         /*plugin*/
         ctx[0]
+      ),
+      busy: (
+        /*busy*/
+        ctx[3]
       )
     }
   });
@@ -5166,7 +5355,6 @@ function create_fragment6(ctx) {
       attr(svg0, "stroke-linejoin", "round");
       attr(svg0, "aria-hidden", "true");
       attr(button0, "class", "ac-btn ac-btn-ghost ac-history-toggle svelte-9ylsa4");
-      attr(button0, "title", "Conversation history");
       attr(
         button0,
         "aria-expanded",
@@ -5215,7 +5403,6 @@ function create_fragment6(ctx) {
       textarea_1.disabled = /*busy*/
       ctx[3];
       attr(textarea_1, "rows", "1");
-      attr(textarea_1, "aria-label", "Chat input");
       attr(textarea_1, "class", "svelte-9ylsa4");
       attr(div2, "class", "ac-input-actions svelte-9ylsa4");
       attr(div3, "class", "ac-input-footer svelte-9ylsa4");
@@ -5379,6 +5566,10 @@ function create_fragment6(ctx) {
       1)
         messagelist_changes.plugin = /*plugin*/
         ctx2[0];
+      if (dirty & /*busy*/
+      8)
+        messagelist_changes.busy = /*busy*/
+        ctx2[3];
       messagelist.$set(messagelist_changes);
       if (!current || dirty & /*busy*/
       8 && textarea_1_placeholder_value !== (textarea_1_placeholder_value = /*busy*/
@@ -5473,7 +5664,9 @@ function instance6($$self, $$props, $$invalidate) {
   let streamBuf = "";
   let textarea;
   let showHistory = false;
-  const unsub = plugin.approvalQueue.onChange((list) => $$invalidate(4, pending2 = list));
+  const unsub = plugin.approvalQueue.onChange((list) => {
+    $$invalidate(4, pending2 = list);
+  });
   onDestroy(unsub);
   function autoResize() {
     if (!textarea)
@@ -5497,7 +5690,7 @@ function instance6($$self, $$props, $$invalidate) {
       for await (const evt of plugin.sendMessage(text2)) {
         if (evt.type === "text") {
           $$invalidate(6, streamBuf += evt.text);
-        } else if (["applied", "rejected", "tool", "pending", "done", "stopped"].includes(
+        } else if (["tool", "pending", "done", "stopped"].includes(
           evt.type
         )) {
           $$invalidate(5, messages = [...plugin.currentConversation.messages]);
@@ -5680,7 +5873,6 @@ function applyUnifiedPatch(original, patch) {
 var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   constructor() {
     super(...arguments);
-    this.approvalQueue = new ApprovalQueue();
     this.lastTurnSummary = { created: [], edited: [], deleted: [] };
     this.summaryListeners = /* @__PURE__ */ new Set();
     this.currentLoop = null;
@@ -5690,6 +5882,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     this.i18n = new I18n(detectLocale(this.settings.locale, import_obsidian6.moment.locale()));
     this.vault = new VaultService(this.app);
     this.conversations = new ConversationStore(this.vault, this.settings.chatsFolder);
+    this.approvalQueue = new ApprovalQueue({ commit: (pw) => this.commitWrite(pw) });
     this.currentConversation = this.newConversation();
     this.addSettingTab(new AgentSettingsTab(this.app, this));
     this.registerView(VIEW_TYPE_AGENT_CHAT, (leaf) => new AgentChatView(leaf, this));
@@ -5703,6 +5896,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   onunload() {
     this.scheduler?.stop();
     this.currentLoop?.cancel();
+    this.approvalQueue?.clear();
   }
   async saveSettings() {
     await this.saveData(this.settings);
@@ -5717,6 +5911,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     });
   }
   async startNewConversation() {
+    this.approvalQueue.clear();
     this.currentConversation = this.newConversation();
   }
   async openConversation(path) {
@@ -5760,7 +5955,6 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
       historyBudget: this.settings.historyTokenBudget,
-      commitWrite: (p) => this.commitWrite(p),
       computeDiff: (p) => this.computeDiff(p)
     });
     this.statusBar.render("thinking");
@@ -5834,11 +6028,11 @@ ${p.args.content}`;
       systemPrompt: this.i18n.t(promptKey),
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
-      historyBudget: this.settings.historyTokenBudget,
-      commitWrite: (p) => this.commitWrite(p)
+      historyBudget: this.settings.historyTokenBudget
     });
     for await (const _ of loop2.run()) {
     }
+    await this.approvalQueue.approveAll();
     await this.logActivity(`[${(/* @__PURE__ */ new Date()).toISOString()}] scheduled/${kind} ok`);
   }
   async logActivity(line) {

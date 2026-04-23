@@ -77,7 +77,7 @@
   $: groups = groupPaths(paths);
 </script>
 
-<div class="cl-root" role="navigation" aria-label="Conversation history">
+<div class="cl-root" role="navigation">
   {#if groups.length === 0}
     <div class="cl-empty">No saved conversations</div>
   {:else}

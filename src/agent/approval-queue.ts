@@ -4,33 +4,42 @@ export interface PendingWrite {
   args: Record<string, unknown>;
   diff: string;
 }
-export interface WriteDecision { status: "applied" | "rejected_by_user"; }
-
-type Entry = { pw: PendingWrite; resolve: (d: WriteDecision) => void };
 
 export class ApprovalQueue {
-  private entries: Entry[] = [];
+  private entries: PendingWrite[] = [];
   private listeners = new Set<(list: PendingWrite[]) => void>();
+  private commit: (pw: PendingWrite) => Promise<void>;
 
-  enqueue(pw: PendingWrite): Promise<WriteDecision> {
-    return new Promise((resolve) => {
-      this.entries.push({ pw, resolve });
-      this.emit();
-    });
+  constructor(opts: { commit: (pw: PendingWrite) => Promise<void> }) {
+    this.commit = opts.commit;
   }
-  list(): PendingWrite[] { return this.entries.map(e => e.pw); }
+
+  enqueue(pw: PendingWrite): void { this.entries.push(pw); this.emit(); }
+  list(): PendingWrite[] { return this.entries.slice(); }
   onChange(fn: (list: PendingWrite[]) => void) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   private emit() { for (const l of this.listeners) l(this.list()); }
 
-  approve(id: string) { this.resolveOne(id, "applied"); }
-  reject(id: string) { this.resolveOne(id, "rejected_by_user"); }
-  approveAll() { while (this.entries.length) this.resolveAt(0, "applied"); }
-  rejectAll() { while (this.entries.length) this.resolveAt(0, "rejected_by_user"); }
-  private resolveOne(id: string, s: WriteDecision["status"]) {
-    const i = this.entries.findIndex(e => e.pw.toolCallId === id);
-    if (i >= 0) this.resolveAt(i, s);
+  async approve(id: string) {
+    const i = this.entries.findIndex(e => e.toolCallId === id);
+    if (i < 0) return;
+    const [pw] = this.entries.splice(i, 1);
+    await this.commit(pw);
+    this.emit();
   }
-  private resolveAt(i: number, s: WriteDecision["status"]) {
-    const [e] = this.entries.splice(i, 1); e.resolve({ status: s }); this.emit();
+
+  reject(id: string) {
+    const i = this.entries.findIndex(e => e.toolCallId === id);
+    if (i >= 0) { this.entries.splice(i, 1); this.emit(); }
   }
+
+  async approveAll() {
+    while (this.entries.length) {
+      const [pw] = this.entries.splice(0, 1);
+      await this.commit(pw);
+    }
+    this.emit();
+  }
+
+  rejectAll() { this.entries = []; this.emit(); }
+  clear() { this.entries = []; this.emit(); }
 }

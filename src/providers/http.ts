@@ -89,12 +89,15 @@ export async function* httpSSE(o: HttpOptions): AsyncIterable<{ data: string }> 
     let buf = "";
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
+      buf += done ? dec.decode() : dec.decode(value, { stream: true });
       let idx: number;
       while ((idx = buf.indexOf("\n\n")) >= 0) {
         const evt = buf.slice(0, idx); buf = buf.slice(idx + 2);
         for (const ev of parseSSE(evt + "\n\n")) yield ev;
+      }
+      if (done) {
+        if (buf.trim()) for (const ev of parseSSE(buf)) yield ev;
+        break;
       }
     }
     return;

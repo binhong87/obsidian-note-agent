@@ -9,12 +9,14 @@
   export let streamBuf: string;
   export let pending: any[];
   export let plugin: ObsidianAgentPlugin;
+  export let busy: boolean = false;
 
   let scrollEl: HTMLDivElement;
   let userScrolledUp = false;
 
   afterUpdate(() => {
-    if (!userScrolledUp && scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+    if (!scrollEl) return;
+    if (!userScrolledUp) scrollEl.scrollTop = scrollEl.scrollHeight;
   });
 
   function onScroll() {
@@ -56,7 +58,7 @@
   }
 </script>
 
-<div class="ml-root" bind:this={scrollEl} on:scroll={onScroll} role="log" aria-live="polite" aria-label="Chat messages">
+<div class="ml-root" bind:this={scrollEl} on:scroll={onScroll} role="log" aria-live="polite">
 
   {#if messages.filter(m => m.role === "user" || m.role === "assistant").length === 0 && !streamBuf}
     <div class="ml-empty">
@@ -84,6 +86,12 @@
           <div class="ml-content" use:markdown={{ text: m.content, plugin }}></div>
         {/if}
       </div>
+      {#each m.toolCalls ?? [] as tc (tc.id)}
+        {@const pw = pending.find(p => p.toolCallId === tc.id)}
+        {#if pw}
+          <DiffReviewBlock p={pw} {plugin} />
+        {/if}
+      {/each}
 
     {:else if m.role === "tool"}
       {@const tc = toolCallMap.get(m.toolCallId ?? "")}
@@ -105,21 +113,23 @@
       <div class="ml-content" use:markdown={{ text: streamBuf, plugin }}></div>
       <span class="ml-cursor" aria-hidden="true"></span>
     </div>
+  {:else if busy}
+    <div class="ml-turn ml-turn-agent ml-thinking-turn">
+      <div class="ml-name ml-name-agent">Agent</div>
+      <div class="ml-thinking" aria-live="polite" aria-label="Agent is thinking">
+        <span class="ml-dot"></span><span class="ml-dot"></span><span class="ml-dot"></span>
+      </div>
+    </div>
   {/if}
 
   {#if pending.length}
-    <div class="ml-pending-group">
-      {#each pending as p (p.toolCallId)}
-        <DiffReviewBlock {p} {plugin} />
-      {/each}
-      <div class="ml-bulk-actions">
-        <button class="ml-bulk-btn ml-bulk-approve" on:click={() => plugin.approvalQueue.approveAll()}>
-          {plugin.i18n.t("diff.applyAll")}
-        </button>
-        <button class="ml-bulk-btn ml-bulk-reject" on:click={() => plugin.approvalQueue.rejectAll()}>
-          {plugin.i18n.t("diff.rejectAll")}
-        </button>
-      </div>
+    <div class="ml-bulk-actions">
+      <button class="ml-bulk-btn ml-bulk-approve" on:click={() => plugin.approvalQueue.approveAll()}>
+        {plugin.i18n.t("diff.applyAll")}
+      </button>
+      <button class="ml-bulk-btn ml-bulk-reject" on:click={() => plugin.approvalQueue.rejectAll()}>
+        {plugin.i18n.t("diff.rejectAll")}
+      </button>
     </div>
   {/if}
 
@@ -216,6 +226,29 @@
   }
   @keyframes ml-blink { 50% { opacity: 0; } }
 
+  /* Thinking indicator */
+  .ml-thinking {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+    min-height: 1em;
+  }
+  .ml-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--interactive-accent);
+    opacity: 0.3;
+    animation: ml-pulse 1.2s infinite ease-in-out both;
+  }
+  .ml-dot:nth-child(2) { animation-delay: 0.15s; }
+  .ml-dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes ml-pulse {
+    0%, 80%, 100% { opacity: 0.25; transform: scale(0.9); }
+    40%           { opacity: 1;    transform: scale(1.1); }
+  }
+
   /* ── Tool result indicator ── */
   .ml-tool-result {
     display: flex; align-items: center; gap: 5px;
@@ -253,14 +286,7 @@
     min-width: 0;
   }
 
-  /* ── Pending diff group ── */
-  .ml-pending-group {
-    margin: 8px 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
+  /* ── Bulk actions footer ── */
   .ml-bulk-actions {
     display: flex; gap: 8px;
     padding: 8px 10px;

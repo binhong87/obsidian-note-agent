@@ -20,7 +20,7 @@ export default class ObsidianAgentPlugin extends Plugin {
   i18n!: I18n;
   vault!: VaultService;
   conversations!: ConversationStore;
-  approvalQueue = new ApprovalQueue();
+  approvalQueue!: ApprovalQueue;
   currentConversation!: Conversation;
   scheduler!: SchedulerService;
   statusBar!: StatusBar;
@@ -33,6 +33,7 @@ export default class ObsidianAgentPlugin extends Plugin {
     this.i18n = new I18n(detectLocale(this.settings.locale, moment.locale()));
     this.vault = new VaultService(this.app);
     this.conversations = new ConversationStore(this.vault, this.settings.chatsFolder);
+    this.approvalQueue = new ApprovalQueue({ commit: (pw) => this.commitWrite(pw) });
     this.currentConversation = this.newConversation();
 
     this.addSettingTab(new AgentSettingsTab(this.app, this));
@@ -48,7 +49,7 @@ export default class ObsidianAgentPlugin extends Plugin {
     this.scheduler.start();
   }
 
-  onunload() { this.scheduler?.stop(); this.currentLoop?.cancel(); }
+  onunload() { this.scheduler?.stop(); this.currentLoop?.cancel(); this.approvalQueue?.clear(); }
 
   async saveSettings() { await this.saveData(this.settings); this.i18n.setLocale(detectLocale(this.settings.locale, moment.locale())); }
 
@@ -59,7 +60,7 @@ export default class ObsidianAgentPlugin extends Plugin {
     });
   }
 
-  async startNewConversation() { this.currentConversation = this.newConversation(); }
+  async startNewConversation() { this.approvalQueue.clear(); this.currentConversation = this.newConversation(); }
   async openConversation(path: string) { this.currentConversation = await this.conversations.load(path); }
 
   cancelCurrentTurn() { this.currentLoop?.cancel(); }
@@ -95,7 +96,6 @@ export default class ObsidianAgentPlugin extends Plugin {
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
       historyBudget: this.settings.historyTokenBudget,
-      commitWrite: (p) => this.commitWrite(p),
       computeDiff: (p) => this.computeDiff(p),
     });
     this.statusBar.render("thinking");
@@ -150,9 +150,9 @@ export default class ObsidianAgentPlugin extends Plugin {
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
       historyBudget: this.settings.historyTokenBudget,
-      commitWrite: (p) => this.commitWrite(p),
     });
     for await (const _ of loop.run()) { /* drain */ }
+    await this.approvalQueue.approveAll();
     await this.logActivity(`[${new Date().toISOString()}] scheduled/${kind} ok`);
   }
 

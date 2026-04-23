@@ -15,12 +15,11 @@ export interface AgentLoopOpts {
   maxIterations: number;
   turnTimeoutMs: number;
   historyBudget: number;
-  commitWrite?: (pending: { tool: string; args: Record<string, unknown> }) => Promise<void>;
   computeDiff?: (pending: { tool: string; args: Record<string, unknown> }) => Promise<string>;
 }
 
 export interface LoopEvent {
-  type: "text" | "tool" | "pending" | "applied" | "rejected" | "done" | "error" | "stopped";
+  type: "text" | "tool" | "pending" | "done" | "error" | "stopped";
   [k: string]: unknown;
 }
 
@@ -77,6 +76,7 @@ export class AgentLoop {
         this.abort.signal.removeEventListener("abort", propagate);
       }
       if (stoppedEarly) return;
+      if (this.abort.signal.aborted) { yield { type: "stopped", reason: "cancelled" }; return; }
       conversation.append(assistantMsg);
       const calls = assistantMsg.toolCalls ?? [];
       if (calls.length === 0) { yield { type: "done" }; return; }
@@ -94,16 +94,9 @@ export class AgentLoop {
         if (result.startsWith(PENDING_PREFIX)) {
           const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
           const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
+          approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
+          conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "queued" }) });
           yield { type: "pending", toolCallId: tc.id, pending: payload, diff };
-          const decision = await approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
-          if (decision.status === "applied") {
-            if (this.opts.commitWrite) await this.opts.commitWrite(payload);
-            conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "applied" }) });
-            yield { type: "applied", toolCallId: tc.id };
-          } else {
-            conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "rejected_by_user" }) });
-            yield { type: "rejected", toolCallId: tc.id };
-          }
         } else {
           conversation.append({ role: "tool", toolCallId: tc.id, content: result });
           yield { type: "tool", toolCallId: tc.id, result };
