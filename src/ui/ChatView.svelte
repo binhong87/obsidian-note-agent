@@ -29,6 +29,7 @@
     const text = input;
     input = "";
     streamBuf = "";
+    let errorMsg: string | null = null;
     await tick();
     autoResize();
     try {
@@ -36,11 +37,11 @@
         if (evt.type === "text") {
           streamBuf += (evt as any).text;
           messages = [...plugin.currentConversation.messages];
-        } else if (["applied","rejected","tool","done","stopped"].includes(evt.type)) {
+        } else if (["applied","rejected","tool","pending","done","stopped"].includes(evt.type)) {
           messages = [...plugin.currentConversation.messages];
           streamBuf = "";
         } else if (evt.type === "error") {
-          messages = [...messages, { role: "assistant", content: `⚠ ${(evt as any).error.message}` }];
+          errorMsg = `⚠ ${(evt as any).error?.message ?? "Unknown error"}`;
         }
         await tick();
       }
@@ -48,6 +49,7 @@
       busy = false;
       streamBuf = "";
       messages = [...plugin.currentConversation.messages];
+      if (errorMsg) messages = [...messages, { role: "assistant", content: errorMsg }];
     }
   }
 

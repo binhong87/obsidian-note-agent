@@ -1004,10 +1004,14 @@ var AgentLoop = class {
       const trimmed = trimHistory(withSys, historyBudget);
       const assistantMsg = { role: "assistant", content: "", toolCalls: [] };
       let stoppedEarly = false;
+      console.debug(`[agent] iteration ${i}, history: ${trimmed.length} msgs`);
       const iterAbort = new AbortController();
       const propagate = () => iterAbort.abort();
       this.abort.signal.addEventListener("abort", propagate, { once: true });
-      const timer = setTimeout(() => iterAbort.abort(), turnTimeoutMs);
+      const timer = setTimeout(() => {
+        console.warn("[agent] turn timeout");
+        iterAbort.abort();
+      }, turnTimeoutMs);
       try {
         for await (const d of provider.chat({
           model: conversation.model,
@@ -1021,6 +1025,7 @@ var AgentLoop = class {
           } else if (d.type === "tool_call" && d.toolCall) {
             assistantMsg.toolCalls.push(d.toolCall);
           } else if (d.type === "error") {
+            console.error("[agent] provider error:", d.error);
             yield { type: "error", error: d.error };
             stoppedEarly = true;
             break;
@@ -1028,6 +1033,7 @@ var AgentLoop = class {
             break;
         }
       } catch (e) {
+        console.error("[agent] chat exception:", e);
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;
       } finally {
@@ -1042,13 +1048,16 @@ var AgentLoop = class {
         yield { type: "done" };
         return;
       }
+      console.debug(`[agent] tool calls: ${calls.map((c) => c.name).join(", ")}`);
       for (const tc of calls) {
         const tool = tools.find((t) => t.name === tc.name);
         if (!tool) {
           conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ error: `unknown tool: ${tc.name}` }) });
           continue;
         }
+        console.debug(`[agent] running tool: ${tc.name}`, tc.args);
         const result = await tool.handler(tc.args);
+        console.debug(`[agent] tool result (${tc.name}):`, result.slice(0, 300));
         if (result.startsWith(PENDING_PREFIX)) {
           const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
           const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
@@ -5198,6 +5207,7 @@ function instance6($$self, $$props, $$invalidate) {
     const text2 = input;
     $$invalidate(1, input = "");
     $$invalidate(6, streamBuf = "");
+    let errorMsg = null;
     await tick();
     autoResize();
     try {
@@ -5205,17 +5215,11 @@ function instance6($$self, $$props, $$invalidate) {
         if (evt.type === "text") {
           $$invalidate(6, streamBuf += evt.text);
           $$invalidate(5, messages = [...plugin.currentConversation.messages]);
-        } else if (["applied", "rejected", "tool", "done", "stopped"].includes(evt.type)) {
+        } else if (["applied", "rejected", "tool", "pending", "done", "stopped"].includes(evt.type)) {
           $$invalidate(5, messages = [...plugin.currentConversation.messages]);
           $$invalidate(6, streamBuf = "");
         } else if (evt.type === "error") {
-          $$invalidate(5, messages = [
-            ...messages,
-            {
-              role: "assistant",
-              content: `\u26A0 ${evt.error.message}`
-            }
-          ]);
+          errorMsg = `\u26A0 ${evt.error?.message ?? "Unknown error"}`;
         }
         await tick();
       }
@@ -5223,6 +5227,8 @@ function instance6($$self, $$props, $$invalidate) {
       $$invalidate(3, busy = false);
       $$invalidate(6, streamBuf = "");
       $$invalidate(5, messages = [...plugin.currentConversation.messages]);
+      if (errorMsg)
+        $$invalidate(5, messages = [...messages, { role: "assistant", content: errorMsg }]);
     }
   }
   function cancel() {

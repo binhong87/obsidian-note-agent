@@ -43,12 +43,13 @@ export class AgentLoop {
       const trimmed = trimHistory(withSys, historyBudget);
       const assistantMsg: Message = { role: "assistant", content: "", toolCalls: [] };
       let stoppedEarly = false;
+      console.debug(`[agent] iteration ${i}, history: ${trimmed.length} msgs`);
 
       // Per-iteration abort that fires on either outer cancel or turn timeout.
       const iterAbort = new AbortController();
       const propagate = () => iterAbort.abort();
       this.abort.signal.addEventListener("abort", propagate, { once: true });
-      const timer = setTimeout(() => iterAbort.abort(), turnTimeoutMs);
+      const timer = setTimeout(() => { console.warn("[agent] turn timeout"); iterAbort.abort(); }, turnTimeoutMs);
       try {
         for await (const d of provider.chat({
           model: conversation.model, messages: trimmed,
@@ -56,10 +57,11 @@ export class AgentLoop {
         })) {
           if (d.type === "text" && d.text) { assistantMsg.content += d.text; yield { type: "text", text: d.text }; }
           else if (d.type === "tool_call" && d.toolCall) { assistantMsg.toolCalls!.push(d.toolCall); }
-          else if (d.type === "error") { yield { type: "error", error: d.error }; stoppedEarly = true; break; }
+          else if (d.type === "error") { console.error("[agent] provider error:", d.error); yield { type: "error", error: d.error }; stoppedEarly = true; break; }
           else if (d.type === "done") break;
         }
       } catch (e: any) {
+        console.error("[agent] chat exception:", e);
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;
       } finally {
@@ -70,6 +72,7 @@ export class AgentLoop {
       conversation.append(assistantMsg);
       const calls = assistantMsg.toolCalls ?? [];
       if (calls.length === 0) { yield { type: "done" }; return; }
+      console.debug(`[agent] tool calls: ${calls.map(c => c.name).join(", ")}`);
 
       for (const tc of calls) {
         const tool = tools.find(t => t.name === tc.name);
@@ -77,7 +80,9 @@ export class AgentLoop {
           conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ error: `unknown tool: ${tc.name}` }) });
           continue;
         }
+        console.debug(`[agent] running tool: ${tc.name}`, tc.args);
         const result = await tool.handler(tc.args);
+        console.debug(`[agent] tool result (${tc.name}):`, result.slice(0, 300));
         if (result.startsWith(PENDING_PREFIX)) {
           const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
           const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
