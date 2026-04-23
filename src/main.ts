@@ -69,6 +69,9 @@ export default class ObsidianAgentPlugin extends Plugin {
 
   async *sendMessage(text: string) {
     const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
+    // Sync model/provider from current settings so changes take effect immediately
+    this.currentConversation.model = this.settings.model;
+    this.currentConversation.provider = this.settings.providerId;
     const ctx = {
       vault: this.vault,
       activeFile: () => {

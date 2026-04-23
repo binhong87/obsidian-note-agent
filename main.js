@@ -5734,6 +5734,8 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   }
   async *sendMessage(text2) {
     const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
+    this.currentConversation.model = this.settings.model;
+    this.currentConversation.provider = this.settings.providerId;
     const ctx = {
       vault: this.vault,
       activeFile: () => {
