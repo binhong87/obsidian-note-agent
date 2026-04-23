@@ -112,6 +112,7 @@
     flex-direction: column;
     padding: 4px 0 0;
     background: var(--background-primary);
+    min-height: 100%;
   }
   .cl-empty {
     padding: 10px 14px;
@@ -170,7 +171,7 @@
     padding: 8px 13px;
     border: none;
     border-top: 1px solid var(--background-modifier-border);
-    background: transparent;
+    background: var(--background-primary);
     color: var(--interactive-accent);
     font-size: 11px;
     font-weight: 600;
@@ -178,6 +179,8 @@
     width: 100%;
     text-align: left;
     transition: background 120ms;
+    position: sticky;
+    bottom: 0;
   }
   .cl-new-btn:hover {
     background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
