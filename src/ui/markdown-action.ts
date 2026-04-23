@@ -16,23 +16,36 @@ export function markdown(node: HTMLElement, params: MarkdownParams) {
     node.empty();
     await MarkdownRenderer.render(p.plugin.app, p.text, node, "", owner);
     if (v !== version) return;
-    node.querySelectorAll<HTMLElement>("pre").forEach(injectCopyButton);
+    node.querySelectorAll<HTMLElement>("pre").forEach(injectCodeHeader);
   }
 
-  function injectCopyButton(pre: HTMLElement) {
-    if (pre.querySelector(".ob-copy-btn")) return;
+  function injectCodeHeader(pre: HTMLElement) {
+    if (pre.querySelector(".ob-code-header")) return;
+    const code = pre.querySelector<HTMLElement>("code");
+    const lang = code?.className.match(/language-(\S+)/)?.[1] ?? "";
+
+    const header = document.createElement("div");
+    header.className = "ob-code-header";
+
+    const langLabel = document.createElement("span");
+    langLabel.className = "ob-code-lang";
+    langLabel.textContent = lang;
+
     const btn = document.createElement("button");
     btn.className = "ob-copy-btn";
     btn.textContent = "Copy";
     btn.setAttribute("aria-label", "Copy code");
     btn.addEventListener("click", () => {
-      const code = (pre.querySelector("code") ?? pre).textContent ?? "";
-      navigator.clipboard.writeText(code).then(() => {
+      const text = (code ?? pre).textContent ?? "";
+      navigator.clipboard.writeText(text).then(() => {
         btn.textContent = "✓ Copied";
         setTimeout(() => { btn.textContent = "Copy"; }, 2000);
       });
     });
-    pre.appendChild(btn);
+
+    header.appendChild(langLabel);
+    header.appendChild(btn);
+    pre.insertBefore(header, pre.firstChild);
   }
 
   render(params);
