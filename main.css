@@ -582,19 +582,20 @@
 }
 
 /* fakecss:D:/workspace/obsidian-agent/src/ui/ConversationList.esbuild-svelte-fake-css */
-.cl-root.svelte-1cegoy1 {
+.cl-root.svelte-19fxzhc {
   display: flex;
   flex-direction: column;
   padding: 4px 0 0;
   background: var(--background-primary);
+  min-height: 100%;
 }
-.cl-empty.svelte-1cegoy1 {
+.cl-empty.svelte-19fxzhc {
   padding: 10px 14px;
   font-size: 12px;
   color: var(--text-faint);
   font-style: italic;
 }
-.cl-section-label.svelte-1cegoy1 {
+.cl-section-label.svelte-19fxzhc {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -602,7 +603,7 @@
   color: var(--text-faint);
   padding: 8px 13px 3px;
 }
-.cl-item.svelte-1cegoy1 {
+.cl-item.svelte-19fxzhc {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -620,43 +621,43 @@
   white-space: nowrap;
   overflow: hidden;
 }
-.cl-item.svelte-1cegoy1:hover {
+.cl-item.svelte-19fxzhc:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
-.cl-item.svelte-1cegoy1:focus-visible {
+.cl-item.svelte-19fxzhc:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: -2px;
 }
-.cl-active.svelte-1cegoy1 {
+.cl-active.svelte-19fxzhc {
   border-left-color: var(--interactive-accent);
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent) !important;
   color: var(--text-accent) !important;
 }
-.cl-icon.svelte-1cegoy1 {
+.cl-icon.svelte-19fxzhc {
   flex-shrink: 0;
   opacity: 0.5;
 }
-.cl-label.svelte-1cegoy1 {
+.cl-label.svelte-19fxzhc {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cl-date.svelte-1cegoy1 {
+.cl-date.svelte-19fxzhc {
   font-size: 10px;
   color: var(--text-faint);
   font-family: var(--font-monospace);
   flex-shrink: 0;
 }
-.cl-new-btn.svelte-1cegoy1 {
+.cl-new-btn.svelte-19fxzhc {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 8px 13px;
   border: none;
   border-top: 1px solid var(--background-modifier-border);
-  background: transparent;
+  background: var(--background-primary);
   color: var(--interactive-accent);
   font-size: 11px;
   font-weight: 600;
@@ -664,8 +665,10 @@
   width: 100%;
   text-align: left;
   transition: background 120ms;
+  position: sticky;
+  bottom: 0;
 }
-.cl-new-btn.svelte-1cegoy1:hover {
+.cl-new-btn.svelte-19fxzhc:hover {
   background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
 }
 

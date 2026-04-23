@@ -4056,7 +4056,7 @@ function create_if_block4(ctx) {
     c() {
       div = element("div");
       div.textContent = "No saved conversations";
-      attr(div, "class", "cl-empty svelte-1cegoy1");
+      attr(div, "class", "cl-empty svelte-19fxzhc");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -4080,7 +4080,7 @@ function create_if_block_14(ctx) {
     c() {
       span = element("span");
       t = text(t_value);
-      attr(span, "class", "cl-date svelte-1cegoy1");
+      attr(span, "class", "cl-date svelte-19fxzhc");
     },
     m(target, anchor) {
       insert(target, span, anchor);
@@ -4144,7 +4144,7 @@ function create_each_block_12(key_1, ctx) {
         if_block.c();
       t3 = space();
       attr(path, "d", "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z");
-      attr(svg, "class", "cl-icon svelte-1cegoy1");
+      attr(svg, "class", "cl-icon svelte-19fxzhc");
       attr(svg, "width", "11");
       attr(svg, "height", "11");
       attr(svg, "viewBox", "0 0 24 24");
@@ -4154,8 +4154,8 @@ function create_each_block_12(key_1, ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(span, "class", "cl-label svelte-1cegoy1");
-      attr(button, "class", "cl-item svelte-1cegoy1");
+      attr(span, "class", "cl-label svelte-19fxzhc");
+      attr(button, "class", "cl-item svelte-19fxzhc");
       attr(button, "title", button_title_value = /*p*/
       ctx[11]);
       attr(button, "aria-current", button_aria_current_value = /*p*/
@@ -4277,7 +4277,7 @@ function create_each_block3(key_1, ctx) {
         each_blocks[i].c();
       }
       each_1_anchor = empty();
-      attr(div, "class", "cl-section-label svelte-1cegoy1");
+      attr(div, "class", "cl-section-label svelte-19fxzhc");
       this.first = div;
     },
     m(target, anchor) {
@@ -4342,8 +4342,8 @@ function create_fragment5(ctx) {
       button = element("button");
       button.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
     New conversation`;
-      attr(button, "class", "cl-new-btn svelte-1cegoy1");
-      attr(div, "class", "cl-root svelte-1cegoy1");
+      attr(button, "class", "cl-new-btn svelte-19fxzhc");
+      attr(div, "class", "cl-root svelte-19fxzhc");
       attr(div, "role", "navigation");
       attr(div, "aria-label", "Conversation history");
     },
