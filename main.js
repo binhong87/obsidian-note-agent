@@ -40,7 +40,7 @@ var DEFAULT_SETTINGS = {
   chatsFolder: "_agent/chats",
   locale: "auto",
   maxIterations: 25,
-  turnTimeoutMs: 12e4,
+  turnTimeoutMs: 3e5,
   historyTokenBudget: 32e3,
   scheduled: {
     dailySummary: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/daily" },
@@ -1071,8 +1071,12 @@ var AgentLoop = class {
             break;
         }
       } catch (e) {
-        if (this.abort.signal.aborted || e instanceof DOMException && e.name === "AbortError") {
+        if (this.abort.signal.aborted) {
           yield { type: "stopped", reason: "cancelled" };
+          return;
+        }
+        if (e instanceof DOMException && e.name === "AbortError") {
+          yield { type: "error", error: { kind: "timeout", message: `Request timed out after ${Math.round(turnTimeoutMs / 1e3)}s \u2014 the provider is too slow. Try again or increase the timeout in plugin settings.` } };
           return;
         }
         console.error("[agent] chat exception:", e);
@@ -1169,6 +1173,13 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
     new import_obsidian3.Setting(containerEl).setName("Model").addText((x) => x.setValue(s.model).onChange(async (v) => {
       s.model = v;
       await this.plugin.saveSettings();
+    }));
+    new import_obsidian3.Setting(containerEl).setName("Request timeout (seconds)").setDesc("Max time to wait for a single LLM response. Increase for slow providers.").addText((x) => x.setValue(String(Math.round(s.turnTimeoutMs / 1e3))).onChange(async (v) => {
+      const n = parseInt(v, 10);
+      if (n > 0) {
+        s.turnTimeoutMs = n * 1e3;
+        await this.plugin.saveSettings();
+      }
     }));
     new import_obsidian3.Setting(containerEl).setName("Default mode").addDropdown((d) => d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit")).setValue(s.mode).onChange(async (v) => {
       s.mode = v;

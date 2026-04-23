@@ -28,6 +28,16 @@ export class AgentSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName("Model").addText(x =>
       x.setValue(s.model).onChange(async v => { s.model = v; await this.plugin.saveSettings(); }));
 
+    new Setting(containerEl)
+      .setName("Request timeout (seconds)")
+      .setDesc("Max time to wait for a single LLM response. Increase for slow providers.")
+      .addText(x => x
+        .setValue(String(Math.round(s.turnTimeoutMs / 1000)))
+        .onChange(async v => {
+          const n = parseInt(v, 10);
+          if (n > 0) { s.turnTimeoutMs = n * 1000; await this.plugin.saveSettings(); }
+        }));
+
     new Setting(containerEl).setName("Default mode").addDropdown(d =>
       d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit"))
         .setValue(s.mode).onChange(async v => { s.mode = v as any; await this.plugin.saveSettings(); }));

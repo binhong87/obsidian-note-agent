@@ -61,8 +61,12 @@ export class AgentLoop {
           else if (d.type === "done") break;
         }
       } catch (e: any) {
-        if (this.abort.signal.aborted || (e instanceof DOMException && e.name === "AbortError")) {
+        if (this.abort.signal.aborted) {
           yield { type: "stopped", reason: "cancelled" };
+          return;
+        }
+        if (e instanceof DOMException && e.name === "AbortError") {
+          yield { type: "error", error: { kind: "timeout", message: `Request timed out after ${Math.round(turnTimeoutMs / 1000)}s — the provider is too slow. Try again or increase the timeout in plugin settings.` } };
           return;
         }
         console.error("[agent] chat exception:", e);

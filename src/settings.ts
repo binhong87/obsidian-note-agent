@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   chatsFolder: "_agent/chats",
   locale: "auto",
   maxIterations: 25,
-  turnTimeoutMs: 120_000,
+  turnTimeoutMs: 300_000,
   historyTokenBudget: 32_000,
   scheduled: {
     dailySummary: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/daily" },
