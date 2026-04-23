@@ -59,6 +59,11 @@
     showHistory = false;
   }
 
+  async function onConversationSelect() {
+    messages = plugin.currentConversation.messages.slice();
+    showHistory = false;
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); }
   }
@@ -98,7 +103,7 @@
   <!-- History drawer -->
   {#if showHistory}
     <div class="ac-history-drawer">
-      <ConversationList {plugin} />
+      <ConversationList {plugin} on:select={onConversationSelect} on:newChat={newChat} />
     </div>
   {/if}
 
@@ -212,7 +217,7 @@
   /* ── History drawer ── */
   .ac-history-drawer {
     border-bottom: 1px solid var(--background-modifier-border);
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
     flex-shrink: 0;
     background: var(--background-secondary);
