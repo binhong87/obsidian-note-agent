@@ -10,6 +10,6 @@ export class StatusBar {
       : state === "thinking" ? "…"
       : state === "compacting" ? "⟳"
       : "?";
-    this.el.setText(`${label} ${s.providerId}:${s.model || "-"}`);
+    this.el.setText(`${label} ${s.providerId}:${s.providers[s.providerId]?.model || "-"}`);
   }
 }

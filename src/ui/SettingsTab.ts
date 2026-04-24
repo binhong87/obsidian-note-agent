@@ -1,6 +1,8 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type ObsidianAgentPlugin from "../main";
 import { listProviderIds } from "../providers/registry";
+import { PROVIDER_DEFAULTS, defaultProfile } from "../providers/defaults";
+import type { ProviderId } from "../types";
 
 export class AgentSettingsTab extends PluginSettingTab {
   constructor(app: App, private plugin: ObsidianAgentPlugin) { super(app, plugin); }
@@ -9,24 +11,53 @@ export class AgentSettingsTab extends PluginSettingTab {
     const { containerEl } = this; containerEl.empty();
     const s = this.plugin.settings;
     const t = this.plugin.i18n.t.bind(this.plugin.i18n);
+    const wide = (el: HTMLInputElement) => {
+      el.style.width = "100%";
+      const control = el.closest(".setting-item-control") as HTMLElement | null;
+      if (control) { control.style.flex = "0 0 50%"; control.style.minWidth = "0"; }
+    };
+
+    // Ensure the active provider has a profile entry
+    if (!s.providers[s.providerId]) s.providers[s.providerId] = defaultProfile(s.providerId);
+    const profile = s.providers[s.providerId];
+    const defaults = PROVIDER_DEFAULTS[s.providerId];
 
     containerEl.createEl("h2", { text: "Obsidian Agent" });
 
     new Setting(containerEl).setName("Provider").addDropdown(d => {
       for (const id of listProviderIds()) d.addOption(id, id);
-      d.setValue(s.providerId).onChange(async v => { s.providerId = v as any; await this.plugin.saveSettings(); this.display(); });
+      d.setValue(s.providerId).onChange(async v => {
+        s.providerId = v as ProviderId;
+        if (!s.providers[s.providerId]) s.providers[s.providerId] = defaultProfile(s.providerId);
+        await this.plugin.saveSettings();
+        this.display();
+      });
     });
 
     new Setting(containerEl).setName("API key").addText(x => {
-      x.inputEl.type = "password";
-      x.setValue(s.apiKey).onChange(async v => { s.apiKey = v; await this.plugin.saveSettings(); });
+      wide(x.inputEl);
+      x.setValue(profile.apiKey).onChange(async v => { profile.apiKey = v; await this.plugin.saveSettings(); });
     });
 
-    new Setting(containerEl).setName("Base URL (optional)").addText(x =>
-      x.setValue(s.baseUrl).onChange(async v => { s.baseUrl = v; await this.plugin.saveSettings(); }));
+    new Setting(containerEl)
+      .setName("Base URL")
+      .setDesc(`Leave empty to use default: ${defaults.baseUrl}`)
+      .addText(x => {
+        wide(x.inputEl);
+        x.setPlaceholder(defaults.baseUrl)
+          .setValue(profile.baseUrl)
+          .onChange(async v => { profile.baseUrl = v.trim(); await this.plugin.saveSettings(); });
+      });
 
-    new Setting(containerEl).setName("Model").addText(x =>
-      x.setValue(s.model).onChange(async v => { s.model = v; await this.plugin.saveSettings(); }));
+    new Setting(containerEl)
+      .setName("Model")
+      .setDesc(`Default: ${defaults.model}`)
+      .addText(x => {
+        wide(x.inputEl);
+        x.setPlaceholder(defaults.model)
+          .setValue(profile.model)
+          .onChange(async v => { profile.model = v.trim(); await this.plugin.saveSettings(); });
+      });
 
     new Setting(containerEl)
       .setName("Request timeout (seconds)")
@@ -42,8 +73,10 @@ export class AgentSettingsTab extends PluginSettingTab {
       d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit"))
         .setValue(s.mode).onChange(async v => { s.mode = v as any; await this.plugin.saveSettings(); }));
 
-    new Setting(containerEl).setName("Chats folder").addText(x =>
-      x.setValue(s.chatsFolder).onChange(async v => { s.chatsFolder = v; await this.plugin.saveSettings(); }));
+    new Setting(containerEl).setName("Chats folder").addText(x => {
+      wide(x.inputEl);
+      x.setValue(s.chatsFolder).onChange(async v => { s.chatsFolder = v; await this.plugin.saveSettings(); });
+    });
 
     new Setting(containerEl).setName("Language").addDropdown(d =>
       d.addOption("auto", "Auto").addOption("en", "English").addOption("zh-CN", "中文")

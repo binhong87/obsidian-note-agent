@@ -81,7 +81,7 @@
   }
 
   const t = (k: string, v?: any) => plugin.i18n.t(k, v);
-  $: providerLabel = `${plugin.settings.providerId}/${plugin.settings.model || "–"}`;
+  $: providerLabel = `${plugin.settings.providerId}/${plugin.settings.providers[plugin.settings.providerId]?.model || "–"}`;
   $: charCount = input.length;
   $: showCharCount = charCount > 500;
 </script>

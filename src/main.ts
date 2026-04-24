@@ -1,5 +1,5 @@
 import { Plugin, WorkspaceLeaf, Notice, moment } from "obsidian";
-import { migrateSettings, Settings } from "./settings";
+import { migrateSettings, Settings, activeProfile } from "./settings";
 import { I18n, detectLocale } from "./services/i18n";
 import { VaultService } from "./services/vault-service";
 import { ConversationStore } from "./services/conversation-store";
@@ -36,7 +36,7 @@ export default class ObsidianAgentPlugin extends Plugin {
     this.settings = migrateSettings(await this.loadData());
     this.i18n = new I18n(detectLocale(this.settings.locale, moment.locale()));
     this.vault = new VaultService(this.app);
-    this.conversations = new ConversationStore(this.vault, this.settings.chatsFolder);
+    this.conversations = new ConversationStore(this.vault, () => this.settings.chatsFolder);
     this.approvalQueue = new ApprovalQueue({ commit: (pw) => this.commitWrite(pw) });
     this.currentConversation = this.newConversation();
 
@@ -60,7 +60,7 @@ export default class ObsidianAgentPlugin extends Plugin {
   newConversation(): Conversation {
     return new Conversation({
       id: `c_${Date.now()}`, mode: this.settings.mode,
-      provider: this.settings.providerId, model: this.settings.model,
+      provider: this.settings.providerId, model: activeProfile(this.settings).model,
     });
   }
 
@@ -79,9 +79,10 @@ export default class ObsidianAgentPlugin extends Plugin {
   }
 
   async *sendMessage(text: string) {
-    const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
+    const prof = activeProfile(this.settings);
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
     // Sync model/provider from current settings so changes take effect immediately
-    this.currentConversation.model = this.settings.model;
+    this.currentConversation.model = prof.model;
     this.currentConversation.provider = this.settings.providerId;
     const ctx = {
       vault: this.vault,
@@ -102,7 +103,7 @@ export default class ObsidianAgentPlugin extends Plugin {
       conversation: this.currentConversation,
       systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
       provider,
-      model: this.settings.model,
+      model: prof.model,
       providerId: this.settings.providerId,
       settings: {
         historyTokenBudget: this.settings.historyTokenBudget,
@@ -176,8 +177,9 @@ export default class ObsidianAgentPlugin extends Plugin {
   }
 
   private async runScheduled(kind: "daily" | "weekly", cfg: any): Promise<void> {
-    const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
-    const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: this.settings.model });
+    const prof = activeProfile(this.settings);
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: prof.model });
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");
     const promptKey = kind === "daily" ? "prompt.scheduled.daily" : "prompt.scheduled.weekly";
@@ -188,7 +190,7 @@ export default class ObsidianAgentPlugin extends Plugin {
       conversation: conv,
       systemPrompt,
       provider,
-      model: this.settings.model,
+      model: prof.model,
       providerId: this.settings.providerId,
       settings: {
         historyTokenBudget: this.settings.historyTokenBudget,

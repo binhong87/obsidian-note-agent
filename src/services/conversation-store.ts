@@ -2,7 +2,11 @@ import type { VaultService } from "./vault-service";
 import { Conversation, serializeConversation, parseConversation } from "../agent/conversation";
 
 export class ConversationStore {
-  constructor(private vault: VaultService, private folder: string) {}
+  constructor(private vault: VaultService, private folderRef: string | (() => string)) {}
+
+  private get folder(): string {
+    return typeof this.folderRef === "function" ? this.folderRef() : this.folderRef;
+  }
 
   private pathFor(c: Conversation): string {
     const date = new Date(c.createdAt).toISOString().slice(0, 10);

@@ -1,4 +1,5 @@
 import type { Mode, ProviderId, Locale } from "./types";
+import { PROVIDER_DEFAULTS, defaultProfile } from "./providers/defaults";
 
 export interface ScheduledTaskSetting {
   enabled: boolean;
@@ -7,11 +8,17 @@ export interface ScheduledTaskSetting {
   weekday?: number;
 }
 
-export interface Settings {
-  providerId: ProviderId;
+export interface ProviderProfile {
   apiKey: string;
+  /** Empty string means "use the provider's default base URL". */
   baseUrl: string;
   model: string;
+}
+
+export interface Settings {
+  providerId: ProviderId;
+  /** Per-provider credentials + model so switching providers doesn't clobber fields. */
+  providers: Record<ProviderId, ProviderProfile>;
   mode: Mode;
   chatsFolder: string;
   locale: Locale;
@@ -31,11 +38,15 @@ export interface Settings {
   };
 }
 
+function defaultProviders(): Record<ProviderId, ProviderProfile> {
+  const out = {} as Record<ProviderId, ProviderProfile>;
+  for (const id of Object.keys(PROVIDER_DEFAULTS) as ProviderId[]) out[id] = defaultProfile(id);
+  return out;
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   providerId: "openai",
-  apiKey: "",
-  baseUrl: "",
-  model: "",
+  providers: defaultProviders(),
   mode: "ask",
   chatsFolder: "_agent/chats",
   locale: "auto",
@@ -51,13 +62,52 @@ export const DEFAULT_SETTINGS: Settings = {
   },
 };
 
-export function migrateSettings(raw: Partial<Settings> | undefined): Settings {
+/** Shape of the pre-refactor settings — used only inside migrateSettings. */
+interface LegacySettings {
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+}
+
+export function migrateSettings(raw: (Partial<Settings> & LegacySettings) | undefined): Settings {
+  const r = raw ?? {};
+  const providerId: ProviderId = (r.providerId ?? DEFAULT_SETTINGS.providerId) as ProviderId;
+
+  // Start with full default profiles so every provider has a usable entry
+  const providers: Record<ProviderId, ProviderProfile> = { ...defaultProviders(), ...(r.providers ?? {}) };
+
+  // Fold legacy flat fields into the active provider's profile
+  const hasLegacy = r.apiKey !== undefined || r.baseUrl !== undefined || r.model !== undefined;
+  if (hasLegacy) {
+    const existing = providers[providerId] ?? defaultProfile(providerId);
+    providers[providerId] = {
+      apiKey:  r.apiKey  ?? existing.apiKey,
+      baseUrl: r.baseUrl ?? existing.baseUrl,
+      model:   r.model   ?? existing.model,
+    };
+  }
+
+  const { apiKey: _a, baseUrl: _b, model: _m, providers: _p, scheduled: _s, ...rest } = r as any;
+
   return {
     ...DEFAULT_SETTINGS,
-    ...(raw ?? {}),
+    ...rest,
+    providerId,
+    providers,
     scheduled: {
-      dailySummary: { ...DEFAULT_SETTINGS.scheduled.dailySummary, ...(raw?.scheduled?.dailySummary ?? {}) },
-      weeklyReview: { ...DEFAULT_SETTINGS.scheduled.weeklyReview, ...(raw?.scheduled?.weeklyReview ?? {}) },
+      dailySummary: { ...DEFAULT_SETTINGS.scheduled.dailySummary, ...(r.scheduled?.dailySummary ?? {}) },
+      weeklyReview: { ...DEFAULT_SETTINGS.scheduled.weeklyReview, ...(r.scheduled?.weeklyReview ?? {}) },
     },
+  };
+}
+
+/** Resolve the active profile with defaults applied (empty baseUrl → provider default). */
+export function activeProfile(s: Settings): { apiKey: string; baseUrl: string; model: string } {
+  const p = s.providers[s.providerId] ?? defaultProfile(s.providerId);
+  const d = PROVIDER_DEFAULTS[s.providerId];
+  return {
+    apiKey: p.apiKey,
+    baseUrl: p.baseUrl || d.baseUrl,
+    model: p.model || d.model,
   };
 }

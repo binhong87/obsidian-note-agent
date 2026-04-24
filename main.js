@@ -30,12 +30,33 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian6 = require("obsidian");
 
+// src/providers/defaults.ts
+var PROVIDER_DEFAULTS = {
+  openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-sonnet-4-6" },
+  ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
+  deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
+  qwen: { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
+  kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+  zhipu: { baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-plus" },
+  minimax: { baseUrl: "https://api.minimax.chat/v1", model: "MiniMax-Text-01" }
+};
+function defaultProfile(id) {
+  const d = PROVIDER_DEFAULTS[id];
+  return { apiKey: "", baseUrl: "", model: d.model };
+}
+
 // src/settings.ts
+function defaultProviders() {
+  const out = {};
+  for (const id of Object.keys(PROVIDER_DEFAULTS))
+    out[id] = defaultProfile(id);
+  return out;
+}
 var DEFAULT_SETTINGS = {
   providerId: "openai",
-  apiKey: "",
-  baseUrl: "",
-  model: "",
+  providers: defaultProviders(),
   mode: "ask",
   chatsFolder: "_agent/chats",
   locale: "auto",
@@ -52,13 +73,37 @@ var DEFAULT_SETTINGS = {
   }
 };
 function migrateSettings(raw) {
+  const r = raw ?? {};
+  const providerId = r.providerId ?? DEFAULT_SETTINGS.providerId;
+  const providers = { ...defaultProviders(), ...r.providers ?? {} };
+  const hasLegacy = r.apiKey !== void 0 || r.baseUrl !== void 0 || r.model !== void 0;
+  if (hasLegacy) {
+    const existing = providers[providerId] ?? defaultProfile(providerId);
+    providers[providerId] = {
+      apiKey: r.apiKey ?? existing.apiKey,
+      baseUrl: r.baseUrl ?? existing.baseUrl,
+      model: r.model ?? existing.model
+    };
+  }
+  const { apiKey: _a, baseUrl: _b, model: _m, providers: _p, scheduled: _s, ...rest } = r;
   return {
     ...DEFAULT_SETTINGS,
-    ...raw ?? {},
+    ...rest,
+    providerId,
+    providers,
     scheduled: {
-      dailySummary: { ...DEFAULT_SETTINGS.scheduled.dailySummary, ...raw?.scheduled?.dailySummary ?? {} },
-      weeklyReview: { ...DEFAULT_SETTINGS.scheduled.weeklyReview, ...raw?.scheduled?.weeklyReview ?? {} }
+      dailySummary: { ...DEFAULT_SETTINGS.scheduled.dailySummary, ...r.scheduled?.dailySummary ?? {} },
+      weeklyReview: { ...DEFAULT_SETTINGS.scheduled.weeklyReview, ...r.scheduled?.weeklyReview ?? {} }
     }
+  };
+}
+function activeProfile(s) {
+  const p = s.providers[s.providerId] ?? defaultProfile(s.providerId);
+  const d = PROVIDER_DEFAULTS[s.providerId];
+  return {
+    apiKey: p.apiKey,
+    baseUrl: p.baseUrl || d.baseUrl,
+    model: p.model || d.model
   };
 }
 
@@ -339,9 +384,12 @@ function parseConversation(md) {
 
 // src/services/conversation-store.ts
 var ConversationStore = class {
-  constructor(vault, folder) {
+  constructor(vault, folderRef) {
     this.vault = vault;
-    this.folder = folder;
+    this.folderRef = folderRef;
+  }
+  get folder() {
+    return typeof this.folderRef === "function" ? this.folderRef() : this.folderRef;
   }
   pathFor(c) {
     const date = new Date(c.createdAt).toISOString().slice(0, 10);
@@ -1395,31 +1443,51 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
     containerEl.empty();
     const s = this.plugin.settings;
     const t = this.plugin.i18n.t.bind(this.plugin.i18n);
+    const wide = (el) => {
+      el.style.width = "100%";
+      const control = el.closest(".setting-item-control");
+      if (control) {
+        control.style.flex = "0 0 50%";
+        control.style.minWidth = "0";
+      }
+    };
+    if (!s.providers[s.providerId])
+      s.providers[s.providerId] = defaultProfile(s.providerId);
+    const profile = s.providers[s.providerId];
+    const defaults = PROVIDER_DEFAULTS[s.providerId];
     containerEl.createEl("h2", { text: "Obsidian Agent" });
     new import_obsidian3.Setting(containerEl).setName("Provider").addDropdown((d) => {
       for (const id of listProviderIds())
         d.addOption(id, id);
       d.setValue(s.providerId).onChange(async (v) => {
         s.providerId = v;
+        if (!s.providers[s.providerId])
+          s.providers[s.providerId] = defaultProfile(s.providerId);
         await this.plugin.saveSettings();
         this.display();
       });
     });
     new import_obsidian3.Setting(containerEl).setName("API key").addText((x) => {
-      x.inputEl.type = "password";
-      x.setValue(s.apiKey).onChange(async (v) => {
-        s.apiKey = v;
+      wide(x.inputEl);
+      x.setValue(profile.apiKey).onChange(async (v) => {
+        profile.apiKey = v;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("Base URL (optional)").addText((x) => x.setValue(s.baseUrl).onChange(async (v) => {
-      s.baseUrl = v;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian3.Setting(containerEl).setName("Model").addText((x) => x.setValue(s.model).onChange(async (v) => {
-      s.model = v;
-      await this.plugin.saveSettings();
-    }));
+    new import_obsidian3.Setting(containerEl).setName("Base URL").setDesc(`Leave empty to use default: ${defaults.baseUrl}`).addText((x) => {
+      wide(x.inputEl);
+      x.setPlaceholder(defaults.baseUrl).setValue(profile.baseUrl).onChange(async (v) => {
+        profile.baseUrl = v.trim();
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian3.Setting(containerEl).setName("Model").setDesc(`Default: ${defaults.model}`).addText((x) => {
+      wide(x.inputEl);
+      x.setPlaceholder(defaults.model).setValue(profile.model).onChange(async (v) => {
+        profile.model = v.trim();
+        await this.plugin.saveSettings();
+      });
+    });
     new import_obsidian3.Setting(containerEl).setName("Request timeout (seconds)").setDesc("Max time to wait for a single LLM response. Increase for slow providers.").addText((x) => x.setValue(String(Math.round(s.turnTimeoutMs / 1e3))).onChange(async (v) => {
       const n = parseInt(v, 10);
       if (n > 0) {
@@ -1431,10 +1499,13 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
       s.mode = v;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("Chats folder").addText((x) => x.setValue(s.chatsFolder).onChange(async (v) => {
-      s.chatsFolder = v;
-      await this.plugin.saveSettings();
-    }));
+    new import_obsidian3.Setting(containerEl).setName("Chats folder").addText((x) => {
+      wide(x.inputEl);
+      x.setValue(s.chatsFolder).onChange(async (v) => {
+        s.chatsFolder = v;
+        await this.plugin.saveSettings();
+      });
+    });
     new import_obsidian3.Setting(containerEl).setName("Language").addDropdown((d) => d.addOption("auto", "Auto").addOption("en", "English").addOption("zh-CN", "\u4E2D\u6587").setValue(s.locale).onChange(async (v) => {
       s.locale = v;
       await this.plugin.saveSettings();
@@ -6047,7 +6118,7 @@ function instance6($$self, $$props, $$invalidate) {
     if ($$self.$$.dirty & /*plugin*/
     1) {
       $:
-        $$invalidate(11, providerLabel = `${plugin.settings.providerId}/${plugin.settings.model || "\u2013"}`);
+        $$invalidate(11, providerLabel = `${plugin.settings.providerId}/${plugin.settings.providers[plugin.settings.providerId]?.model || "\u2013"}`);
     }
     if ($$self.$$.dirty & /*input*/
     2) {
@@ -6130,7 +6201,7 @@ var StatusBar = class {
   render(state) {
     const s = this.plugin.settings;
     const label2 = state === "idle" ? "\u25CF" : state === "thinking" ? "\u2026" : state === "compacting" ? "\u27F3" : "?";
-    this.el.setText(`${label2} ${s.providerId}:${s.model || "-"}`);
+    this.el.setText(`${label2} ${s.providerId}:${s.providers[s.providerId]?.model || "-"}`);
   }
 };
 
@@ -6186,7 +6257,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     this.settings = migrateSettings(await this.loadData());
     this.i18n = new I18n(detectLocale(this.settings.locale, import_obsidian6.moment.locale()));
     this.vault = new VaultService(this.app);
-    this.conversations = new ConversationStore(this.vault, this.settings.chatsFolder);
+    this.conversations = new ConversationStore(this.vault, () => this.settings.chatsFolder);
     this.approvalQueue = new ApprovalQueue({ commit: (pw) => this.commitWrite(pw) });
     this.currentConversation = this.newConversation();
     this.addSettingTab(new AgentSettingsTab(this.app, this));
@@ -6212,7 +6283,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
       id: `c_${Date.now()}`,
       mode: this.settings.mode,
       provider: this.settings.providerId,
-      model: this.settings.model
+      model: activeProfile(this.settings).model
     });
   }
   async startNewConversation() {
@@ -6242,8 +6313,9 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
       l(v);
   }
   async *sendMessage(text2) {
-    const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
-    this.currentConversation.model = this.settings.model;
+    const prof = activeProfile(this.settings);
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    this.currentConversation.model = prof.model;
     this.currentConversation.provider = this.settings.providerId;
     const ctx = {
       vault: this.vault,
@@ -6264,7 +6336,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
       conversation: this.currentConversation,
       systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
       provider,
-      model: this.settings.model,
+      model: prof.model,
       providerId: this.settings.providerId,
       settings: {
         historyTokenBudget: this.settings.historyTokenBudget,
@@ -6354,8 +6426,9 @@ ${p.args.content}`;
     this.emitSummary();
   }
   async runScheduled(kind, cfg) {
-    const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
-    const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: this.settings.model });
+    const prof = activeProfile(this.settings);
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: prof.model });
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");
     const promptKey = kind === "daily" ? "prompt.scheduled.daily" : "prompt.scheduled.weekly";
@@ -6365,7 +6438,7 @@ ${p.args.content}`;
       conversation: conv,
       systemPrompt,
       provider,
-      model: this.settings.model,
+      model: prof.model,
       providerId: this.settings.providerId,
       settings: {
         historyTokenBudget: this.settings.historyTokenBudget,
