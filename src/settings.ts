@@ -13,6 +13,8 @@ export interface ProviderProfile {
   /** Empty string means "use the provider's default base URL". */
   baseUrl: string;
   model: string;
+  /** For the "custom" provider: which wire protocol to use. Ignored for others. */
+  compat?: "openai" | "anthropic";
 }
 
 export interface Settings {
@@ -102,12 +104,13 @@ export function migrateSettings(raw: (Partial<Settings> & LegacySettings) | unde
 }
 
 /** Resolve the active profile with defaults applied (empty baseUrl → provider default). */
-export function activeProfile(s: Settings): { apiKey: string; baseUrl: string; model: string } {
+export function activeProfile(s: Settings): { apiKey: string; baseUrl: string; model: string; compat?: "openai" | "anthropic" } {
   const p = s.providers[s.providerId] ?? defaultProfile(s.providerId);
   const d = PROVIDER_DEFAULTS[s.providerId];
   return {
     apiKey: p.apiKey,
     baseUrl: p.baseUrl || d.baseUrl,
     model: p.model || d.model,
+    compat: p.compat,
   };
 }

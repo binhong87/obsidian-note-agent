@@ -1,7 +1,8 @@
 export type Mode = "ask" | "edit" | "scheduled";
 export type ProviderId =
-  | "openai" | "anthropic" | "ollama" | "openrouter"
-  | "deepseek" | "qwen" | "kimi" | "zhipu" | "minimax";
+  | "deepseek" | "qwen" | "kimi" | "zhipu" | "minimax"
+  | "openai" | "anthropic" | "openrouter" | "ollama"
+  | "custom";
 export type Locale = "auto" | "en" | "zh-CN";
 
 export interface ToolCall { id: string; name: string; args: Record<string, unknown>; }

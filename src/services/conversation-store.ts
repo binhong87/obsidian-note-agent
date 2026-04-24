@@ -29,4 +29,8 @@ export class ConversationStore {
   async list(): Promise<string[]> {
     return this.vault.listFolder(this.folder);
   }
+
+  async delete(path: string): Promise<void> {
+    await this.vault.deleteNote(path);
+  }
 }

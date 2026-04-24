@@ -19,13 +19,16 @@
     pending = list;
   });
   const unsubCompacting = plugin.onCompactingChange(v => { compacting = v; });
+  let settingsTick = 0;
+  const unsubSettings = plugin.onSettingsChange(() => { settingsTick++; });
   onDestroy(unsub);
   onDestroy(unsubCompacting);
+  onDestroy(unsubSettings);
 
   function autoResize() {
     if (!textarea) return;
     textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
+    textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 66), 200) + "px";
   }
 
   async function send() {
@@ -81,7 +84,15 @@
   }
 
   const t = (k: string, v?: any) => plugin.i18n.t(k, v);
-  $: providerLabel = `${plugin.settings.providerId}/${plugin.settings.providers[plugin.settings.providerId]?.model || "–"}`;
+
+  function openSettings() {
+    const setting = (plugin.app as any).setting;
+    if (setting?.open) {
+      setting.open();
+      setting.openTabById?.(plugin.manifest.id);
+    }
+  }
+  $: providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)} / ${plugin.settings.providers[plugin.settings.providerId]?.model || "–"}`);
   $: charCount = input.length;
   $: showCharCount = charCount > 500;
 </script>
@@ -97,11 +108,6 @@
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </button>
-
-    <span class="ac-provider-chip" title={t("chat.providerChip")}>
-      <span class="ac-provider-dot" aria-hidden="true"></span>
-      {providerLabel}
-    </span>
 
     <div class="ac-header-right">
       <ModeToggle {plugin} />
@@ -129,18 +135,21 @@
         bind:value={input}
         placeholder={busy ? "" : t("chat.placeholder")}
         disabled={busy}
-        rows="1"
+        rows="3"
         on:input={autoResize}
         on:keydown={onKeydown}
       ></textarea>
 
       <div class="ac-input-footer">
-        {#if showCharCount}
-          <span class="ac-char-count" class:ac-char-warn={charCount > 2000}>{charCount}</span>
-        {:else}
-          <span></span>
-        {/if}
-        <div class="ac-input-actions">
+        <button class="ac-provider-chip" on:click={openSettings} title={t("chat.providerChip")} type="button">
+          <span class="ac-provider-dot" aria-hidden="true"></span>
+          {providerLabel}
+        </button>
+        <div class="ac-input-actions-wrap">
+          {#if showCharCount}
+            <span class="ac-char-count" class:ac-char-warn={charCount > 2000}>{charCount}</span>
+          {/if}
+          <div class="ac-input-actions">
           {#if busy}
             <button class="ac-btn ac-btn-stop" on:click={cancel} title={t("chat.cancel")} aria-label={t("chat.cancel")}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
@@ -156,6 +165,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           {/if}
+        </div>
         </div>
       </div>
     </div>
@@ -209,7 +219,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 150px;
-    cursor: default;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.4;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .ac-provider-chip:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+    border-color: color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border));
+  }
+  .ac-provider-chip:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
   }
   .ac-provider-dot {
     width: 6px; height: 6px;
@@ -322,7 +344,7 @@
     line-height: 1.5;
     resize: none;
     outline: none;
-    min-height: 22px;
+    min-height: 66px;
     max-height: 200px;
     padding: 0;
     box-shadow: none;
@@ -333,6 +355,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+  }
+  .ac-input-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
   .ac-input-actions { display: flex; align-items: center; }
   .ac-char-count {

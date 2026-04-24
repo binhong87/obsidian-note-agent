@@ -16,6 +16,24 @@
     dispatch("select");
   }
 
+  async function remove(p: string, evt: Event) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (!confirm(t("history.deleteConfirm"))) return;
+    try {
+      await plugin.conversations.delete(p);
+    } catch (e) {
+      console.error("Failed to delete conversation", e);
+      return;
+    }
+    paths = paths.filter(x => x !== p);
+    if (active === p) {
+      await plugin.startNewConversation();
+      active = "";
+      dispatch("newChat");
+    }
+  }
+
   function startNew() {
     dispatch("newChat");
   }
@@ -116,6 +134,17 @@
           <svg class="cl-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span class="cl-label">{label(p)}</span>
           {#if d}<span class="cl-date">{d}</span>{/if}
+          <span
+            class="cl-delete"
+            role="button"
+            tabindex="0"
+            on:click={(e) => remove(p, e)}
+            on:keydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); remove(p, e); } }}
+            title={t("history.delete")}
+            aria-label={t("history.delete")}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
         </button>
       {/each}
     {/each}
@@ -184,6 +213,30 @@
     color: var(--text-faint);
     font-family: var(--font-monospace);
     flex-shrink: 0;
+  }
+  .cl-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 120ms, background 120ms, color 120ms;
+  }
+  .cl-item:hover .cl-delete,
+  .cl-item:focus-within .cl-delete { opacity: 1; }
+  .cl-delete:hover {
+    background: color-mix(in srgb, var(--color-red, #e53e3e) 15%, transparent);
+    color: var(--color-red, #e53e3e);
+  }
+  .cl-delete:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 1px;
+    opacity: 1;
   }
   .cl-new-btn {
     display: flex;

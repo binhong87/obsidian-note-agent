@@ -32,15 +32,16 @@ var import_obsidian6 = require("obsidian");
 
 // src/providers/defaults.ts
 var PROVIDER_DEFAULTS = {
-  openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
-  anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-sonnet-4-6" },
-  ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
-  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
   deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
   qwen: { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
   kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
   zhipu: { baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-plus" },
-  minimax: { baseUrl: "https://api.minimax.chat/v1", model: "MiniMax-Text-01" }
+  minimax: { baseUrl: "https://api.minimax.chat/v1", model: "MiniMax-Text-01" },
+  openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-sonnet-4-6" },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
+  ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
+  custom: { baseUrl: "", model: "" }
 };
 function defaultProfile(id) {
   const d = PROVIDER_DEFAULTS[id];
@@ -103,7 +104,8 @@ function activeProfile(s) {
   return {
     apiKey: p.apiKey,
     baseUrl: p.baseUrl || d.baseUrl,
-    model: p.model || d.model
+    model: p.model || d.model,
+    compat: p.compat
   };
 }
 
@@ -124,6 +126,8 @@ var en_default = {
   "history.older": "Older",
   "history.empty": "No saved conversations",
   "history.newConversation": "New conversation",
+  "history.delete": "Delete conversation",
+  "history.deleteConfirm": "Delete this conversation? This cannot be undone.",
   "chat.you": "You",
   "chat.agent": "Agent",
   "chat.thinking": "Agent is thinking",
@@ -145,6 +149,18 @@ var en_default = {
   "notice.activityLogFailed": "Agent: failed to write activity log",
   "settings.title": "Obsidian Agent",
   "settings.provider": "Provider",
+  "settings.provider.compat": "API compatibility",
+  "settings.provider.compat.desc": "Which wire protocol the custom endpoint speaks.",
+  "provider.deepseek": "DeepSeek",
+  "provider.qwen": "Qwen",
+  "provider.kimi": "Kimi",
+  "provider.zhipu": "Z.ai",
+  "provider.minimax": "MiniMax",
+  "provider.openai": "OpenAI",
+  "provider.anthropic": "Anthropic",
+  "provider.openrouter": "OpenRouter",
+  "provider.ollama": "Ollama",
+  "provider.custom": "Custom",
   "settings.apiKey": "API key",
   "settings.baseUrl": "Base URL",
   "settings.baseUrl.desc": "Leave empty to use default: {{url}}",
@@ -193,6 +209,8 @@ var zh_CN_default = {
   "history.older": "\u66F4\u65E9",
   "history.empty": "\u6682\u65E0\u4FDD\u5B58\u7684\u5BF9\u8BDD",
   "history.newConversation": "\u65B0\u5EFA\u5BF9\u8BDD",
+  "history.delete": "\u5220\u9664\u5BF9\u8BDD",
+  "history.deleteConfirm": "\u786E\u8BA4\u5220\u9664\u6B64\u5BF9\u8BDD\uFF1F\u6B64\u64CD\u4F5C\u65E0\u6CD5\u64A4\u9500\u3002",
   "chat.you": "\u4F60",
   "chat.agent": "Agent",
   "chat.thinking": "Agent \u6B63\u5728\u601D\u8003",
@@ -214,6 +232,18 @@ var zh_CN_default = {
   "notice.activityLogFailed": "Agent\uFF1A\u6D3B\u52A8\u65E5\u5FD7\u5199\u5165\u5931\u8D25",
   "settings.title": "Obsidian Agent",
   "settings.provider": "\u63D0\u4F9B\u5546",
+  "settings.provider.compat": "API \u517C\u5BB9\u6A21\u5F0F",
+  "settings.provider.compat.desc": "\u81EA\u5B9A\u4E49\u7AEF\u70B9\u4F7F\u7528\u7684\u534F\u8BAE\u3002",
+  "provider.deepseek": "DeepSeek",
+  "provider.qwen": "Qwen\uFF08\u5343\u95EE\uFF09",
+  "provider.kimi": "Kimi",
+  "provider.zhipu": "\u667A\u8C31GLM",
+  "provider.minimax": "MiniMax",
+  "provider.openai": "OpenAI",
+  "provider.anthropic": "Anthropic",
+  "provider.openrouter": "OpenRouter",
+  "provider.ollama": "Ollama",
+  "provider.custom": "\u81EA\u5B9A\u4E49",
   "settings.apiKey": "API \u5BC6\u94A5",
   "settings.baseUrl": "Base URL",
   "settings.baseUrl.desc": "\u7559\u7A7A\u5219\u4F7F\u7528\u9ED8\u8BA4\u5730\u5740\uFF1A{{url}}",
@@ -223,7 +253,7 @@ var zh_CN_default = {
   "settings.timeout.desc": "\u7B49\u5F85\u5355\u6B21 LLM \u54CD\u5E94\u7684\u6700\u957F\u65F6\u95F4\u3002\u63D0\u4F9B\u5546\u8F83\u6162\u65F6\u53EF\u9002\u5F53\u8C03\u9AD8\u3002",
   "settings.defaultMode": "\u9ED8\u8BA4\u6A21\u5F0F",
   "settings.chatsFolder": "\u5BF9\u8BDD\u5B58\u653E\u6587\u4EF6\u5939",
-  "settings.language": "\u8BED\u8A00",
+  "settings.language": "\u9996\u9009\u8BED\u8A00",
   "settings.language.auto": "\u81EA\u52A8",
   "settings.scheduled": "\u8BA1\u5212\u4EFB\u52A1",
   "settings.scheduled.daily": "\u6BCF\u65E5\u603B\u7ED3",
@@ -485,6 +515,9 @@ var ConversationStore = class {
   }
   async list() {
     return this.vault.listFolder(this.folder);
+  }
+  async delete(path) {
+    await this.vault.deleteNote(path);
   }
 };
 
@@ -981,12 +1014,14 @@ function createProvider(id, cfg) {
       return createZhipu(cfg.apiKey, cfg.baseUrl);
     case "minimax":
       return createMiniMax(cfg.apiKey, cfg.baseUrl);
+    case "custom":
+      return cfg.compat === "anthropic" ? new AnthropicProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl }) : new OpenAIProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl });
     default:
       throw new Error(`unknown provider: ${id}`);
   }
 }
 function listProviderIds() {
-  return ["openai", "anthropic", "ollama", "openrouter", "deepseek", "qwen", "kimi", "zhipu", "minimax"];
+  return ["deepseek", "qwen", "kimi", "zhipu", "minimax", "openai", "anthropic", "openrouter", "ollama", "custom"];
 }
 
 // src/tools/read.ts
@@ -1532,7 +1567,7 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
     containerEl.createEl("h2", { text: t("settings.title") });
     new import_obsidian3.Setting(containerEl).setName(t("settings.provider")).addDropdown((d) => {
       for (const id of listProviderIds())
-        d.addOption(id, id);
+        d.addOption(id, t(`provider.${id}`));
       d.setValue(s.providerId).onChange(async (v) => {
         s.providerId = v;
         if (!s.providers[s.providerId])
@@ -1541,6 +1576,15 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
         this.display();
       });
     });
+    if (s.providerId === "custom") {
+      new import_obsidian3.Setting(containerEl).setName(t("settings.provider.compat")).setDesc(t("settings.provider.compat.desc")).addDropdown((d) => {
+        d.addOption("openai", "OpenAI").addOption("anthropic", "Anthropic");
+        d.setValue(profile.compat ?? "openai").onChange(async (v) => {
+          profile.compat = v;
+          await this.plugin.saveSettings();
+        });
+      });
+    }
     new import_obsidian3.Setting(containerEl).setName(t("settings.apiKey")).addText((x) => {
       wide(x.inputEl);
       x.setValue(profile.apiKey).onChange(async (v) => {
@@ -1568,10 +1612,6 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
         s.turnTimeoutMs = n * 1e3;
         await this.plugin.saveSettings();
       }
-    }));
-    new import_obsidian3.Setting(containerEl).setName(t("settings.defaultMode")).addDropdown((d) => d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit")).setValue(s.mode).onChange(async (v) => {
-      s.mode = v;
-      await this.plugin.saveSettings();
     }));
     new import_obsidian3.Setting(containerEl).setName(t("settings.chatsFolder")).addText((x) => {
       wide(x.inputEl);
@@ -3401,7 +3441,29 @@ function markdown(node, params) {
   const owner = new import_obsidian4.Component();
   owner.load();
   let version = 0;
+  let currentPlugin = params.plugin;
+  const onClick = (evt) => {
+    const target = evt.target;
+    const a = target?.closest("a");
+    if (!a || !node.contains(a))
+      return;
+    if (a.classList.contains("internal-link")) {
+      evt.preventDefault();
+      const href = a.getAttribute("href") ?? a.getAttribute("data-href") ?? "";
+      if (!href)
+        return;
+      const newLeaf = evt.ctrlKey || evt.metaKey || evt.button === 1;
+      currentPlugin.app.workspace.openLinkText(href, "", newLeaf);
+    } else if (a.classList.contains("external-link") || /^https?:/i.test(a.getAttribute("href") ?? "")) {
+      evt.preventDefault();
+      const href = a.getAttribute("href") ?? "";
+      if (href)
+        window.open(href, "_blank");
+    }
+  };
+  node.addEventListener("click", onClick);
   async function render(p) {
+    currentPlugin = p.plugin;
     const v = ++version;
     node.empty();
     await import_obsidian4.MarkdownRenderer.render(p.plugin.app, p.text, node, "", owner);
@@ -3447,6 +3509,7 @@ function markdown(node, params) {
       render(newParams);
     },
     destroy() {
+      node.removeEventListener("click", onClick);
       owner.unload();
     }
   };
@@ -5047,22 +5110,22 @@ var ModeToggle_default = ModeToggle;
 var { Map: Map_12 } = globals;
 function get_each_context3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[12] = list[i];
+  child_ctx[15] = list[i];
   return child_ctx;
 }
 function get_each_context_12(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[15] = list[i];
+  child_ctx[18] = list[i];
   const constants_0 = (
     /*rowDate*/
-    child_ctx[5](
+    child_ctx[6](
       /*p*/
-      child_ctx[15],
+      child_ctx[18],
       /*group*/
-      child_ctx[12].key
+      child_ctx[15].key
     )
   );
-  child_ctx[16] = constants_0;
+  child_ctx[19] = constants_0;
   return child_ctx;
 }
 function create_else_block3(ctx) {
@@ -5075,7 +5138,7 @@ function create_else_block3(ctx) {
   );
   const get_key = (ctx2) => (
     /*group*/
-    ctx2[12].key
+    ctx2[15].key
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context3(ctx, each_value, i);
@@ -5098,8 +5161,8 @@ function create_else_block3(ctx) {
       insert(target, each_1_anchor, anchor);
     },
     p(ctx2, dirty) {
-      if (dirty & /*groups, active, undefined, open, rowDate, label*/
-      39) {
+      if (dirty & /*groups, active, undefined, open, t, remove, rowDate, label*/
+      111) {
         each_value = ensure_array_like(
           /*groups*/
           ctx2[1]
@@ -5123,8 +5186,8 @@ function create_if_block4(ctx) {
     c() {
       div = element("div");
       div.textContent = `${/*t*/
-      ctx[4]("history.empty")}`;
-      attr(div, "class", "cl-empty svelte-19fxzhc");
+      ctx[5]("history.empty")}`;
+      attr(div, "class", "cl-empty svelte-1tmhpc1");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -5141,14 +5204,14 @@ function create_if_block_14(ctx) {
   let span;
   let t_1_value = (
     /*d*/
-    ctx[16] + ""
+    ctx[19] + ""
   );
   let t_1;
   return {
     c() {
       span = element("span");
       t_1 = text(t_1_value);
-      attr(span, "class", "cl-date svelte-19fxzhc");
+      attr(span, "class", "cl-date svelte-1tmhpc1");
     },
     m(target, anchor) {
       insert(target, span, anchor);
@@ -5157,7 +5220,7 @@ function create_if_block_14(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*groups*/
       2 && t_1_value !== (t_1_value = /*d*/
-      ctx2[16] + ""))
+      ctx2[19] + ""))
         set_data(t_1, t_1_value);
     },
     d(detaching) {
@@ -5169,31 +5232,58 @@ function create_if_block_14(ctx) {
 }
 function create_each_block_12(key_1, ctx) {
   let button;
-  let svg;
+  let svg0;
   let path;
   let t0;
-  let span;
+  let span0;
   let t1_value = label(
     /*p*/
-    ctx[15]
+    ctx[18]
   ) + "";
   let t1;
   let t2;
   let t3;
+  let span1;
+  let svg1;
+  let line0;
+  let line1;
+  let span1_title_value;
+  let span1_aria_label_value;
+  let t4;
   let button_title_value;
   let button_aria_current_value;
   let mounted;
   let dispose;
   let if_block = (
     /*d*/
-    ctx[16] && create_if_block_14(ctx)
+    ctx[19] && create_if_block_14(ctx)
   );
-  function click_handler() {
+  function click_handler(...args) {
     return (
       /*click_handler*/
-      ctx[8](
+      ctx[9](
         /*p*/
-        ctx[15]
+        ctx[18],
+        ...args
+      )
+    );
+  }
+  function keydown_handler(...args) {
+    return (
+      /*keydown_handler*/
+      ctx[10](
+        /*p*/
+        ctx[18],
+        ...args
+      )
+    );
+  }
+  function click_handler_1() {
+    return (
+      /*click_handler_1*/
+      ctx[11](
+        /*p*/
+        ctx[18]
       )
     );
   }
@@ -5202,55 +5292,93 @@ function create_each_block_12(key_1, ctx) {
     first: null,
     c() {
       button = element("button");
-      svg = svg_element("svg");
+      svg0 = svg_element("svg");
       path = svg_element("path");
       t0 = space();
-      span = element("span");
+      span0 = element("span");
       t1 = text(t1_value);
       t2 = space();
       if (if_block)
         if_block.c();
       t3 = space();
+      span1 = element("span");
+      svg1 = svg_element("svg");
+      line0 = svg_element("line");
+      line1 = svg_element("line");
+      t4 = space();
       attr(path, "d", "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z");
-      attr(svg, "class", "cl-icon svelte-19fxzhc");
-      attr(svg, "width", "11");
-      attr(svg, "height", "11");
-      attr(svg, "viewBox", "0 0 24 24");
-      attr(svg, "fill", "none");
-      attr(svg, "stroke", "currentColor");
-      attr(svg, "stroke-width", "2");
-      attr(svg, "stroke-linecap", "round");
-      attr(svg, "stroke-linejoin", "round");
-      attr(svg, "aria-hidden", "true");
-      attr(span, "class", "cl-label svelte-19fxzhc");
-      attr(button, "class", "cl-item svelte-19fxzhc");
+      attr(svg0, "class", "cl-icon svelte-1tmhpc1");
+      attr(svg0, "width", "11");
+      attr(svg0, "height", "11");
+      attr(svg0, "viewBox", "0 0 24 24");
+      attr(svg0, "fill", "none");
+      attr(svg0, "stroke", "currentColor");
+      attr(svg0, "stroke-width", "2");
+      attr(svg0, "stroke-linecap", "round");
+      attr(svg0, "stroke-linejoin", "round");
+      attr(svg0, "aria-hidden", "true");
+      attr(span0, "class", "cl-label svelte-1tmhpc1");
+      attr(line0, "x1", "18");
+      attr(line0, "y1", "6");
+      attr(line0, "x2", "6");
+      attr(line0, "y2", "18");
+      attr(line1, "x1", "6");
+      attr(line1, "y1", "6");
+      attr(line1, "x2", "18");
+      attr(line1, "y2", "18");
+      attr(svg1, "width", "10");
+      attr(svg1, "height", "10");
+      attr(svg1, "viewBox", "0 0 24 24");
+      attr(svg1, "fill", "none");
+      attr(svg1, "stroke", "currentColor");
+      attr(svg1, "stroke-width", "2.5");
+      attr(svg1, "stroke-linecap", "round");
+      attr(svg1, "stroke-linejoin", "round");
+      attr(svg1, "aria-hidden", "true");
+      attr(span1, "class", "cl-delete svelte-1tmhpc1");
+      attr(span1, "role", "button");
+      attr(span1, "tabindex", "0");
+      attr(span1, "title", span1_title_value = /*t*/
+      ctx[5]("history.delete"));
+      attr(span1, "aria-label", span1_aria_label_value = /*t*/
+      ctx[5]("history.delete"));
+      attr(button, "class", "cl-item svelte-1tmhpc1");
       attr(button, "title", button_title_value = /*p*/
-      ctx[15]);
+      ctx[18]);
       attr(button, "aria-current", button_aria_current_value = /*p*/
-      ctx[15] === /*active*/
+      ctx[18] === /*active*/
       ctx[0] ? "page" : void 0);
       toggle_class(
         button,
         "cl-active",
         /*p*/
-        ctx[15] === /*active*/
+        ctx[18] === /*active*/
         ctx[0]
       );
       this.first = button;
     },
     m(target, anchor) {
       insert(target, button, anchor);
-      append(button, svg);
-      append(svg, path);
+      append(button, svg0);
+      append(svg0, path);
       append(button, t0);
-      append(button, span);
-      append(span, t1);
+      append(button, span0);
+      append(span0, t1);
       append(button, t2);
       if (if_block)
         if_block.m(button, null);
       append(button, t3);
+      append(button, span1);
+      append(span1, svg1);
+      append(svg1, line0);
+      append(svg1, line1);
+      append(button, t4);
       if (!mounted) {
-        dispose = listen(button, "click", click_handler);
+        dispose = [
+          listen(span1, "click", click_handler),
+          listen(span1, "keydown", keydown_handler),
+          listen(button, "click", click_handler_1)
+        ];
         mounted = true;
       }
     },
@@ -5259,12 +5387,12 @@ function create_each_block_12(key_1, ctx) {
       if (dirty & /*groups*/
       2 && t1_value !== (t1_value = label(
         /*p*/
-        ctx[15]
+        ctx[18]
       ) + ""))
         set_data(t1, t1_value);
       if (
         /*d*/
-        ctx[16]
+        ctx[19]
       ) {
         if (if_block) {
           if_block.p(ctx, dirty);
@@ -5279,12 +5407,12 @@ function create_each_block_12(key_1, ctx) {
       }
       if (dirty & /*groups*/
       2 && button_title_value !== (button_title_value = /*p*/
-      ctx[15])) {
+      ctx[18])) {
         attr(button, "title", button_title_value);
       }
       if (dirty & /*groups, active*/
       3 && button_aria_current_value !== (button_aria_current_value = /*p*/
-      ctx[15] === /*active*/
+      ctx[18] === /*active*/
       ctx[0] ? "page" : void 0)) {
         attr(button, "aria-current", button_aria_current_value);
       }
@@ -5294,7 +5422,7 @@ function create_each_block_12(key_1, ctx) {
           button,
           "cl-active",
           /*p*/
-          ctx[15] === /*active*/
+          ctx[18] === /*active*/
           ctx[0]
         );
       }
@@ -5306,7 +5434,7 @@ function create_each_block_12(key_1, ctx) {
       if (if_block)
         if_block.d();
       mounted = false;
-      dispose();
+      run_all(dispose);
     }
   };
 }
@@ -5314,7 +5442,7 @@ function create_each_block3(key_1, ctx) {
   let div;
   let t0_value = (
     /*group*/
-    ctx[12].label + ""
+    ctx[15].label + ""
   );
   let t0;
   let t1;
@@ -5323,11 +5451,11 @@ function create_each_block3(key_1, ctx) {
   let each_1_anchor;
   let each_value_1 = ensure_array_like(
     /*group*/
-    ctx[12].paths
+    ctx[15].paths
   );
   const get_key = (ctx2) => (
     /*p*/
-    ctx2[15]
+    ctx2[18]
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
     let child_ctx = get_each_context_12(ctx, each_value_1, i);
@@ -5345,7 +5473,7 @@ function create_each_block3(key_1, ctx) {
         each_blocks[i].c();
       }
       each_1_anchor = empty();
-      attr(div, "class", "cl-section-label svelte-19fxzhc");
+      attr(div, "class", "cl-section-label svelte-1tmhpc1");
       this.first = div;
     },
     m(target, anchor) {
@@ -5363,13 +5491,13 @@ function create_each_block3(key_1, ctx) {
       ctx = new_ctx;
       if (dirty & /*groups*/
       2 && t0_value !== (t0_value = /*group*/
-      ctx[12].label + ""))
+      ctx[15].label + ""))
         set_data(t0, t0_value);
-      if (dirty & /*groups, active, undefined, open, rowDate, label*/
-      39) {
+      if (dirty & /*groups, active, undefined, open, t, remove, rowDate, label*/
+      111) {
         each_value_1 = ensure_array_like(
           /*group*/
-          ctx[12].paths
+          ctx[15].paths
         );
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_12, each_1_anchor, get_each_context_12);
       }
@@ -5396,7 +5524,7 @@ function create_fragment5(ctx) {
   let t1;
   let t2_value = (
     /*t*/
-    ctx[4]("history.newConversation") + ""
+    ctx[5]("history.newConversation") + ""
   );
   let t2;
   let mounted;
@@ -5437,8 +5565,8 @@ function create_fragment5(ctx) {
       attr(svg, "stroke", "currentColor");
       attr(svg, "stroke-width", "2.5");
       attr(svg, "aria-hidden", "true");
-      attr(button, "class", "cl-new-btn svelte-19fxzhc");
-      attr(div, "class", "cl-root svelte-19fxzhc");
+      attr(button, "class", "cl-new-btn svelte-1tmhpc1");
+      attr(div, "class", "cl-root svelte-1tmhpc1");
       attr(div, "role", "navigation");
     },
     m(target, anchor) {
@@ -5456,7 +5584,7 @@ function create_fragment5(ctx) {
           button,
           "click",
           /*startNew*/
-          ctx[3]
+          ctx[4]
         );
         mounted = true;
       }
@@ -5517,12 +5645,30 @@ function instance5($$self, $$props, $$invalidate) {
   let paths = [];
   let active = plugin.currentConversation?.path ?? "";
   onMount(async () => {
-    $$invalidate(7, paths = await plugin.conversations.list());
+    $$invalidate(8, paths = await plugin.conversations.list());
   });
   async function open(p) {
     await plugin.openConversation(p);
     $$invalidate(0, active = p);
     dispatch("select");
+  }
+  async function remove(p, evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (!confirm(t("history.deleteConfirm")))
+      return;
+    try {
+      await plugin.conversations.delete(p);
+    } catch (e) {
+      console.error("Failed to delete conversation", e);
+      return;
+    }
+    $$invalidate(8, paths = paths.filter((x) => x !== p));
+    if (active === p) {
+      await plugin.startNewConversation();
+      $$invalidate(0, active = "");
+      dispatch("newChat");
+    }
   }
   function startNew() {
     dispatch("newChat");
@@ -5581,24 +5727,44 @@ function instance5($$self, $$props, $$invalidate) {
       paths: items
     }));
   }
-  const click_handler = (p) => open(p);
+  const click_handler = (p, e) => remove(p, e);
+  const keydown_handler = (p, e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      remove(p, e);
+    }
+  };
+  const click_handler_1 = (p) => open(p);
   $$self.$$set = ($$props2) => {
     if ("plugin" in $$props2)
-      $$invalidate(6, plugin = $$props2.plugin);
+      $$invalidate(7, plugin = $$props2.plugin);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*paths*/
-    128) {
+    256) {
       $:
         $$invalidate(1, groups = groupPaths(paths));
     }
   };
-  return [active, groups, open, startNew, t, rowDate, plugin, paths, click_handler];
+  return [
+    active,
+    groups,
+    open,
+    remove,
+    startNew,
+    t,
+    rowDate,
+    plugin,
+    paths,
+    click_handler,
+    keydown_handler,
+    click_handler_1
+  ];
 }
 var ConversationList = class extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 6 });
+    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 7 });
   }
 };
 var ConversationList_default = ConversationList;
@@ -5626,7 +5792,7 @@ function create_if_block_23(ctx) {
     c() {
       div = element("div");
       create_component(conversationlist.$$.fragment);
-      attr(div, "class", "ac-history-drawer svelte-9ylsa4");
+      attr(div, "class", "ac-history-drawer svelte-1nhvqhf");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -5659,23 +5825,6 @@ function create_if_block_23(ctx) {
     }
   };
 }
-function create_else_block_1(ctx) {
-  let span;
-  return {
-    c() {
-      span = element("span");
-    },
-    m(target, anchor) {
-      insert(target, span, anchor);
-    },
-    p: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(span);
-      }
-    }
-  };
-}
 function create_if_block_15(ctx) {
   let span;
   let t_1;
@@ -5686,7 +5835,7 @@ function create_if_block_15(ctx) {
         /*charCount*/
         ctx[2]
       );
-      attr(span, "class", "ac-char-count svelte-9ylsa4");
+      attr(span, "class", "ac-char-count svelte-1nhvqhf");
       toggle_class(
         span,
         "ac-char-warn",
@@ -5753,7 +5902,7 @@ function create_else_block4(ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(button, "class", "ac-btn ac-btn-send svelte-9ylsa4");
+      attr(button, "class", "ac-btn ac-btn-send svelte-1nhvqhf");
       button.disabled = button_disabled_value = !/*input*/
       ctx[1].trim();
       attr(button, "title", button_title_value = /*t*/
@@ -5815,7 +5964,7 @@ function create_if_block5(ctx) {
       attr(svg, "viewBox", "0 0 24 24");
       attr(svg, "fill", "currentColor");
       attr(svg, "aria-hidden", "true");
-      attr(button, "class", "ac-btn ac-btn-stop svelte-9ylsa4");
+      attr(button, "class", "ac-btn ac-btn-stop svelte-1nhvqhf");
       attr(button, "title", button_title_value = /*t*/
       ctx[18]("chat.cancel"));
       attr(button, "aria-label", button_aria_label_value = /*t*/
@@ -5846,36 +5995,37 @@ function create_if_block5(ctx) {
   };
 }
 function create_fragment6(ctx) {
-  let div6;
+  let div7;
   let div1;
   let button0;
   let svg0;
   let circle;
   let polyline;
   let t0;
-  let span1;
-  let span0;
-  let t1;
-  let t2;
-  let span1_title_value;
-  let t3;
   let div0;
   let modetoggle;
-  let t4;
+  let t1;
   let button1;
   let svg1;
   let line0;
   let line1;
   let button1_title_value;
   let button1_aria_label_value;
-  let t5;
-  let t6;
+  let t2;
+  let t3;
   let messagelist;
-  let t7;
+  let t4;
+  let div6;
   let div5;
-  let div4;
   let textarea_1;
   let textarea_1_placeholder_value;
+  let t5;
+  let div4;
+  let button2;
+  let span;
+  let t6;
+  let t7;
+  let button2_title_value;
   let t8;
   let div3;
   let t9;
@@ -5919,17 +6069,11 @@ function create_fragment6(ctx) {
       )
     }
   });
+  let if_block1 = (
+    /*showCharCount*/
+    ctx[10] && create_if_block_15(ctx)
+  );
   function select_block_type(ctx2, dirty) {
-    if (
-      /*showCharCount*/
-      ctx2[10]
-    )
-      return create_if_block_15;
-    return create_else_block_1;
-  }
-  let current_block_type = select_block_type(ctx, -1);
-  let if_block1 = current_block_type(ctx);
-  function select_block_type_1(ctx2, dirty) {
     if (
       /*busy*/
       ctx2[3]
@@ -5937,44 +6081,46 @@ function create_fragment6(ctx) {
       return create_if_block5;
     return create_else_block4;
   }
-  let current_block_type_1 = select_block_type_1(ctx, -1);
-  let if_block2 = current_block_type_1(ctx);
+  let current_block_type = select_block_type(ctx, -1);
+  let if_block2 = current_block_type(ctx);
   return {
     c() {
-      div6 = element("div");
+      div7 = element("div");
       div1 = element("div");
       button0 = element("button");
       svg0 = svg_element("svg");
       circle = svg_element("circle");
       polyline = svg_element("polyline");
       t0 = space();
-      span1 = element("span");
-      span0 = element("span");
-      t1 = space();
-      t2 = text(
-        /*providerLabel*/
-        ctx[11]
-      );
-      t3 = space();
       div0 = element("div");
       create_component(modetoggle.$$.fragment);
-      t4 = space();
+      t1 = space();
       button1 = element("button");
       svg1 = svg_element("svg");
       line0 = svg_element("line");
       line1 = svg_element("line");
-      t5 = space();
+      t2 = space();
       if (if_block0)
         if_block0.c();
-      t6 = space();
+      t3 = space();
       create_component(messagelist.$$.fragment);
-      t7 = space();
+      t4 = space();
+      div6 = element("div");
       div5 = element("div");
-      div4 = element("div");
       textarea_1 = element("textarea");
+      t5 = space();
+      div4 = element("div");
+      button2 = element("button");
+      span = element("span");
+      t6 = space();
+      t7 = text(
+        /*providerLabel*/
+        ctx[11]
+      );
       t8 = space();
       div3 = element("div");
-      if_block1.c();
+      if (if_block1)
+        if_block1.c();
       t9 = space();
       div2 = element("div");
       if_block2.c();
@@ -5991,7 +6137,7 @@ function create_fragment6(ctx) {
       attr(svg0, "stroke-linecap", "round");
       attr(svg0, "stroke-linejoin", "round");
       attr(svg0, "aria-hidden", "true");
-      attr(button0, "class", "ac-btn ac-btn-ghost ac-history-toggle svelte-9ylsa4");
+      attr(button0, "class", "ac-btn ac-btn-ghost ac-history-toggle svelte-1nhvqhf");
       attr(
         button0,
         "aria-expanded",
@@ -6004,11 +6150,6 @@ function create_fragment6(ctx) {
         /*showHistory*/
         ctx[9]
       );
-      attr(span0, "class", "ac-provider-dot svelte-9ylsa4");
-      attr(span0, "aria-hidden", "true");
-      attr(span1, "class", "ac-provider-chip svelte-9ylsa4");
-      attr(span1, "title", span1_title_value = /*t*/
-      ctx[18]("chat.providerChip"));
       attr(line0, "x1", "12");
       attr(line0, "y1", "5");
       attr(line0, "x2", "12");
@@ -6026,13 +6167,13 @@ function create_fragment6(ctx) {
       attr(svg1, "stroke-linecap", "round");
       attr(svg1, "stroke-linejoin", "round");
       attr(svg1, "aria-hidden", "true");
-      attr(button1, "class", "ac-btn ac-btn-ghost svelte-9ylsa4");
+      attr(button1, "class", "ac-btn ac-btn-ghost svelte-1nhvqhf");
       attr(button1, "title", button1_title_value = /*t*/
       ctx[18]("chat.new"));
       attr(button1, "aria-label", button1_aria_label_value = /*t*/
       ctx[18]("chat.new"));
-      attr(div0, "class", "ac-header-right svelte-9ylsa4");
-      attr(div1, "class", "ac-header svelte-9ylsa4");
+      attr(div0, "class", "ac-header-right svelte-1nhvqhf");
+      attr(div1, "class", "ac-header svelte-1nhvqhf");
       attr(textarea_1, "placeholder", textarea_1_placeholder_value = /*busy*/
       ctx[3] ? "" : (
         /*t*/
@@ -6040,58 +6181,67 @@ function create_fragment6(ctx) {
       ));
       textarea_1.disabled = /*busy*/
       ctx[3];
-      attr(textarea_1, "rows", "1");
-      attr(textarea_1, "class", "svelte-9ylsa4");
-      attr(div2, "class", "ac-input-actions svelte-9ylsa4");
-      attr(div3, "class", "ac-input-footer svelte-9ylsa4");
-      attr(div4, "class", "ac-input-box svelte-9ylsa4");
+      attr(textarea_1, "rows", "3");
+      attr(textarea_1, "class", "svelte-1nhvqhf");
+      attr(span, "class", "ac-provider-dot svelte-1nhvqhf");
+      attr(span, "aria-hidden", "true");
+      attr(button2, "class", "ac-provider-chip svelte-1nhvqhf");
+      attr(button2, "title", button2_title_value = /*t*/
+      ctx[18]("chat.providerChip"));
+      attr(button2, "type", "button");
+      attr(div2, "class", "ac-input-actions svelte-1nhvqhf");
+      attr(div3, "class", "ac-input-actions-wrap svelte-1nhvqhf");
+      attr(div4, "class", "ac-input-footer svelte-1nhvqhf");
+      attr(div5, "class", "ac-input-box svelte-1nhvqhf");
       toggle_class(
-        div4,
+        div5,
         "busy",
         /*busy*/
         ctx[3]
       );
-      attr(div5, "class", "ac-input-wrap svelte-9ylsa4");
-      attr(div6, "class", "ac-shell svelte-9ylsa4");
+      attr(div6, "class", "ac-input-wrap svelte-1nhvqhf");
+      attr(div7, "class", "ac-shell svelte-1nhvqhf");
     },
     m(target, anchor) {
-      insert(target, div6, anchor);
-      append(div6, div1);
+      insert(target, div7, anchor);
+      append(div7, div1);
       append(div1, button0);
       append(button0, svg0);
       append(svg0, circle);
       append(svg0, polyline);
       append(div1, t0);
-      append(div1, span1);
-      append(span1, span0);
-      append(span1, t1);
-      append(span1, t2);
-      append(div1, t3);
       append(div1, div0);
       mount_component(modetoggle, div0, null);
-      append(div0, t4);
+      append(div0, t1);
       append(div0, button1);
       append(button1, svg1);
       append(svg1, line0);
       append(svg1, line1);
-      append(div6, t5);
+      append(div7, t2);
       if (if_block0)
-        if_block0.m(div6, null);
-      append(div6, t6);
-      mount_component(messagelist, div6, null);
-      append(div6, t7);
+        if_block0.m(div7, null);
+      append(div7, t3);
+      mount_component(messagelist, div7, null);
+      append(div7, t4);
+      append(div7, div6);
       append(div6, div5);
-      append(div5, div4);
-      append(div4, textarea_1);
-      ctx[20](textarea_1);
+      append(div5, textarea_1);
+      ctx[22](textarea_1);
       set_input_value(
         textarea_1,
         /*input*/
         ctx[1]
       );
+      append(div5, t5);
+      append(div5, div4);
+      append(div4, button2);
+      append(button2, span);
+      append(button2, t6);
+      append(button2, t7);
       append(div4, t8);
       append(div4, div3);
-      if_block1.m(div3, null);
+      if (if_block1)
+        if_block1.m(div3, null);
       append(div3, t9);
       append(div3, div2);
       if_block2.m(div2, null);
@@ -6102,7 +6252,7 @@ function create_fragment6(ctx) {
             button0,
             "click",
             /*click_handler*/
-            ctx[19]
+            ctx[21]
           ),
           listen(
             button1,
@@ -6114,7 +6264,7 @@ function create_fragment6(ctx) {
             textarea_1,
             "input",
             /*textarea_1_input_handler*/
-            ctx[21]
+            ctx[23]
           ),
           listen(
             textarea_1,
@@ -6127,6 +6277,12 @@ function create_fragment6(ctx) {
             "keydown",
             /*onKeydown*/
             ctx[17]
+          ),
+          listen(
+            button2,
+            "click",
+            /*openSettings*/
+            ctx[19]
           )
         ];
         mounted = true;
@@ -6151,13 +6307,6 @@ function create_fragment6(ctx) {
           ctx2[9]
         );
       }
-      if (!current || dirty & /*providerLabel*/
-      2048)
-        set_data(
-          t2,
-          /*providerLabel*/
-          ctx2[11]
-        );
       const modetoggle_changes = {};
       if (dirty & /*plugin*/
       1)
@@ -6178,7 +6327,7 @@ function create_fragment6(ctx) {
           if_block0 = create_if_block_23(ctx2);
           if_block0.c();
           transition_in(if_block0, 1);
-          if_block0.m(div6, t6);
+          if_block0.m(div7, t3);
         }
       } else if (if_block0) {
         group_outros();
@@ -6234,21 +6383,33 @@ function create_fragment6(ctx) {
           ctx2[1]
         );
       }
-      if (current_block_type === (current_block_type = select_block_type(ctx2, dirty)) && if_block1) {
-        if_block1.p(ctx2, dirty);
-      } else {
-        if_block1.d(1);
-        if_block1 = current_block_type(ctx2);
+      if (!current || dirty & /*providerLabel*/
+      2048)
+        set_data(
+          t7,
+          /*providerLabel*/
+          ctx2[11]
+        );
+      if (
+        /*showCharCount*/
+        ctx2[10]
+      ) {
         if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_15(ctx2);
           if_block1.c();
           if_block1.m(div3, t9);
         }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
       }
-      if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx2, dirty)) && if_block2) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2, dirty)) && if_block2) {
         if_block2.p(ctx2, dirty);
       } else {
         if_block2.d(1);
-        if_block2 = current_block_type_1(ctx2);
+        if_block2 = current_block_type(ctx2);
         if (if_block2) {
           if_block2.c();
           if_block2.m(div2, null);
@@ -6257,7 +6418,7 @@ function create_fragment6(ctx) {
       if (!current || dirty & /*busy*/
       8) {
         toggle_class(
-          div4,
+          div5,
           "busy",
           /*busy*/
           ctx2[3]
@@ -6280,14 +6441,15 @@ function create_fragment6(ctx) {
     },
     d(detaching) {
       if (detaching) {
-        detach(div6);
+        detach(div7);
       }
       destroy_component(modetoggle);
       if (if_block0)
         if_block0.d();
       destroy_component(messagelist);
-      ctx[20](null);
-      if_block1.d();
+      ctx[22](null);
+      if (if_block1)
+        if_block1.d();
       if_block2.d();
       mounted = false;
       run_all(dispose);
@@ -6313,13 +6475,18 @@ function instance6($$self, $$props, $$invalidate) {
   const unsubCompacting = plugin.onCompactingChange((v) => {
     $$invalidate(7, compacting = v);
   });
+  let settingsTick = 0;
+  const unsubSettings = plugin.onSettingsChange(() => {
+    $$invalidate(20, settingsTick++, settingsTick);
+  });
   onDestroy(unsub);
   onDestroy(unsubCompacting);
+  onDestroy(unsubSettings);
   function autoResize() {
     if (!textarea)
       return;
     $$invalidate(8, textarea.style.height = "auto", textarea);
-    $$invalidate(8, textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px", textarea);
+    $$invalidate(8, textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 66), 200) + "px", textarea);
   }
   async function send() {
     if (!input.trim() || busy)
@@ -6374,6 +6541,13 @@ function instance6($$self, $$props, $$invalidate) {
     }
   }
   const t = (k, v) => plugin.i18n.t(k, v);
+  function openSettings() {
+    const setting = plugin.app.setting;
+    if (setting?.open) {
+      setting.open();
+      setting.openTabById?.(plugin.manifest.id);
+    }
+  }
   const click_handler = () => $$invalidate(9, showHistory = !showHistory);
   function textarea_1_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
@@ -6390,10 +6564,10 @@ function instance6($$self, $$props, $$invalidate) {
       $$invalidate(0, plugin = $$props2.plugin);
   };
   $$self.$$.update = () => {
-    if ($$self.$$.dirty & /*plugin*/
-    1) {
+    if ($$self.$$.dirty & /*settingsTick, plugin*/
+    1048577) {
       $:
-        $$invalidate(11, providerLabel = `${plugin.settings.providerId}/${plugin.settings.providers[plugin.settings.providerId]?.model || "\u2013"}`);
+        $$invalidate(11, providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)} / ${plugin.settings.providers[plugin.settings.providerId]?.model || "\u2013"}`));
     }
     if ($$self.$$.dirty & /*input*/
     2) {
@@ -6426,6 +6600,8 @@ function instance6($$self, $$props, $$invalidate) {
     onConversationSelect,
     onKeydown,
     t,
+    openSettings,
+    settingsTick,
     click_handler,
     textarea_1_binding,
     textarea_1_input_handler
@@ -6527,6 +6703,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     this.summaryListeners = /* @__PURE__ */ new Set();
     this.compactingListeners = /* @__PURE__ */ new Set();
     this.currentLoop = null;
+    this.settingsListeners = /* @__PURE__ */ new Set();
   }
   async onload() {
     this.settings = migrateSettings(await this.loadData());
@@ -6552,6 +6729,12 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
     this.i18n.setLocale(detectLocale(this.settings.locale, import_obsidian6.moment.locale()));
+    for (const l of this.settingsListeners)
+      l();
+  }
+  onSettingsChange(fn) {
+    this.settingsListeners.add(fn);
+    return () => this.settingsListeners.delete(fn);
   }
   newConversation() {
     return new Conversation({
@@ -6589,7 +6772,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   }
   async *sendMessage(text2) {
     const prof = activeProfile(this.settings);
-    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl, compat: prof.compat });
     this.currentConversation.model = prof.model;
     this.currentConversation.provider = this.settings.providerId;
     const ctx = {
@@ -6702,7 +6885,7 @@ ${p.args.content}`;
   }
   async runScheduled(kind, cfg) {
     const prof = activeProfile(this.settings);
-    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl, compat: prof.compat });
     const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: prof.model });
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");

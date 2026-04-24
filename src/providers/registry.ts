@@ -10,7 +10,7 @@ import { createZhipu } from "./zhipu";
 import { createMiniMax } from "./minimax";
 import { createOpenRouter } from "./openrouter";
 
-export interface ProviderConfig { apiKey: string; baseUrl?: string; }
+export interface ProviderConfig { apiKey: string; baseUrl?: string; compat?: "openai" | "anthropic"; }
 
 export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider {
   switch (id) {
@@ -23,10 +23,14 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
     case "kimi": return createKimi(cfg.apiKey, cfg.baseUrl);
     case "zhipu": return createZhipu(cfg.apiKey, cfg.baseUrl);
     case "minimax": return createMiniMax(cfg.apiKey, cfg.baseUrl);
+    case "custom":
+      return cfg.compat === "anthropic"
+        ? new AnthropicProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl })
+        : new OpenAIProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl });
     default: throw new Error(`unknown provider: ${id}`);
   }
 }
 
 export function listProviderIds(): ProviderId[] {
-  return ["openai","anthropic","ollama","openrouter","deepseek","qwen","kimi","zhipu","minimax"];
+  return ["deepseek","qwen","kimi","zhipu","minimax","openai","anthropic","openrouter","ollama","custom"];
 }

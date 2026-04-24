@@ -25,7 +25,7 @@ export class AgentSettingsTab extends PluginSettingTab {
     containerEl.createEl("h2", { text: t("settings.title") });
 
     new Setting(containerEl).setName(t("settings.provider")).addDropdown(d => {
-      for (const id of listProviderIds()) d.addOption(id, id);
+      for (const id of listProviderIds()) d.addOption(id, t(`provider.${id}`));
       d.setValue(s.providerId).onChange(async v => {
         s.providerId = v as ProviderId;
         if (!s.providers[s.providerId]) s.providers[s.providerId] = defaultProfile(s.providerId);
@@ -33,6 +33,19 @@ export class AgentSettingsTab extends PluginSettingTab {
         this.display();
       });
     });
+
+    if (s.providerId === "custom") {
+      new Setting(containerEl)
+        .setName(t("settings.provider.compat"))
+        .setDesc(t("settings.provider.compat.desc"))
+        .addDropdown(d => {
+          d.addOption("openai", "OpenAI").addOption("anthropic", "Anthropic");
+          d.setValue(profile.compat ?? "openai").onChange(async v => {
+            profile.compat = v as "openai" | "anthropic";
+            await this.plugin.saveSettings();
+          });
+        });
+    }
 
     new Setting(containerEl).setName(t("settings.apiKey")).addText(x => {
       wide(x.inputEl);
@@ -68,10 +81,6 @@ export class AgentSettingsTab extends PluginSettingTab {
           const n = parseInt(v, 10);
           if (n > 0) { s.turnTimeoutMs = n * 1000; await this.plugin.saveSettings(); }
         }));
-
-    new Setting(containerEl).setName(t("settings.defaultMode")).addDropdown(d =>
-      d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit"))
-        .setValue(s.mode).onChange(async v => { s.mode = v as any; await this.plugin.saveSettings(); }));
 
     new Setting(containerEl).setName(t("settings.chatsFolder")).addText(x => {
       wide(x.inputEl);

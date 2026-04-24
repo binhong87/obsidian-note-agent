@@ -55,7 +55,14 @@ export default class ObsidianAgentPlugin extends Plugin {
 
   onunload() { this.scheduler?.stop(); this.currentLoop?.cancel(); this.approvalQueue?.clear(); }
 
-  async saveSettings() { await this.saveData(this.settings); this.i18n.setLocale(detectLocale(this.settings.locale, moment.locale())); }
+  async saveSettings() {
+    await this.saveData(this.settings);
+    this.i18n.setLocale(detectLocale(this.settings.locale, moment.locale()));
+    for (const l of this.settingsListeners) l();
+  }
+
+  private settingsListeners = new Set<() => void>();
+  onSettingsChange(fn: () => void) { this.settingsListeners.add(fn); return () => this.settingsListeners.delete(fn); }
 
   newConversation(): Conversation {
     return new Conversation({
@@ -80,7 +87,7 @@ export default class ObsidianAgentPlugin extends Plugin {
 
   async *sendMessage(text: string) {
     const prof = activeProfile(this.settings);
-    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl, compat: prof.compat });
     // Sync model/provider from current settings so changes take effect immediately
     this.currentConversation.model = prof.model;
     this.currentConversation.provider = this.settings.providerId;
@@ -178,7 +185,7 @@ export default class ObsidianAgentPlugin extends Plugin {
 
   private async runScheduled(kind: "daily" | "weekly", cfg: any): Promise<void> {
     const prof = activeProfile(this.settings);
-    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl });
+    const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl, compat: prof.compat });
     const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: prof.model });
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");

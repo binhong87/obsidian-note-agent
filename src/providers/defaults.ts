@@ -6,15 +6,16 @@ export interface ProviderDefault {
 }
 
 export const PROVIDER_DEFAULTS: Record<ProviderId, ProviderDefault> = {
-  openai:     { baseUrl: "https://api.openai.com/v1",                            model: "gpt-4o-mini" },
-  anthropic:  { baseUrl: "https://api.anthropic.com",                            model: "claude-sonnet-4-6" },
-  ollama:     { baseUrl: "http://localhost:11434",                               model: "llama3.1" },
-  openrouter: { baseUrl: "https://openrouter.ai/api/v1",                         model: "openai/gpt-4o-mini" },
   deepseek:   { baseUrl: "https://api.deepseek.com",                             model: "deepseek-chat" },
   qwen:       { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",    model: "qwen-plus" },
   kimi:       { baseUrl: "https://api.moonshot.cn/v1",                           model: "moonshot-v1-8k" },
   zhipu:      { baseUrl: "https://open.bigmodel.cn/api/paas/v4",                 model: "glm-4-plus" },
   minimax:    { baseUrl: "https://api.minimax.chat/v1",                          model: "MiniMax-Text-01" },
+  openai:     { baseUrl: "https://api.openai.com/v1",                            model: "gpt-4o-mini" },
+  anthropic:  { baseUrl: "https://api.anthropic.com",                            model: "claude-sonnet-4-6" },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1",                         model: "openai/gpt-4o-mini" },
+  ollama:     { baseUrl: "http://localhost:11434",                               model: "llama3.1" },
+  custom:     { baseUrl: "",                                                     model: "" },
 };
 
 export function defaultProfile(id: ProviderId) {
