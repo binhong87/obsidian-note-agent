@@ -77,7 +77,7 @@
 
   <!-- Diff body -->
   {#if diffLines.length}
-    <div class="db-diff" role="region" aria-label="File diff">
+    <div class="db-diff" role="region" aria-label={plugin.i18n.t("diff.aria")}>
       <div class="db-diff-inner">
         {#each diffLines as line}
           <div class="db-line db-{line.type}">
@@ -94,7 +94,7 @@
       </div>
     </div>
   {:else}
-    <div class="db-no-diff">No preview available</div>
+    <div class="db-no-diff">{plugin.i18n.t("diff.noPreview")}</div>
   {/if}
 </div>
 

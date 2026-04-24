@@ -12,7 +12,7 @@
   }
 </script>
 
-<div class="mt-root" role="group" aria-label="Chat mode">
+<div class="mt-root" role="group" aria-label={plugin.i18n.t("chat.mode.aria")}>
   <button
     class="mt-option"
     class:mt-active={mode === "ask"}

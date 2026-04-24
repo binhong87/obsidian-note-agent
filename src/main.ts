@@ -43,9 +43,9 @@ export default class ObsidianAgentPlugin extends Plugin {
     this.addSettingTab(new AgentSettingsTab(this.app, this));
     this.registerView(VIEW_TYPE_AGENT_CHAT, (leaf: WorkspaceLeaf) => new AgentChatView(leaf, this));
 
-    this.addRibbonIcon("bot", "Open Agent", () => this.activateView());
-    this.addCommand({ id: "open-agent", name: "Open Agent", callback: () => this.activateView() });
-    this.addCommand({ id: "new-agent-chat", name: "New chat", callback: () => this.startNewConversation() });
+    this.addRibbonIcon("bot", this.i18n.t("command.open"), () => this.activateView());
+    this.addCommand({ id: "open-agent", name: this.i18n.t("command.open"), callback: () => this.activateView() });
+    this.addCommand({ id: "new-agent-chat", name: this.i18n.t("command.newChat"), callback: () => this.startNewConversation() });
 
     this.statusBar = new StatusBar(this, this.addStatusBarItem());
 
@@ -215,13 +215,21 @@ export default class ObsidianAgentPlugin extends Plugin {
   private async logActivity(line: string) {
     const path = `${this.settings.chatsFolder}/../activity.log.md`;
     try { const cur = await this.vault.readNote(path); await this.vault.editNote(path, cur + line + "\n"); }
-    catch { try { await this.vault.createNote(path, line + "\n"); } catch { new Notice("Agent: failed to write activity log"); } }
+    catch { try { await this.vault.createNote(path, line + "\n"); } catch { new Notice(this.i18n.t("notice.activityLogFailed")); } }
   }
 
   async activateView() {
     let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_AGENT_CHAT)[0];
     if (!leaf) { leaf = this.app.workspace.getRightLeaf(false)!; await leaf.setViewState({ type: VIEW_TYPE_AGENT_CHAT, active: true }); }
     this.app.workspace.revealLeaf(leaf);
+  }
+
+  /** Detach + reopen the chat view so Svelte components re-render with the current locale. */
+  async reopenChatView() {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AGENT_CHAT);
+    if (!leaves.length) return;
+    for (const leaf of leaves) leaf.detach();
+    await this.activateView();
   }
 }
 

@@ -22,9 +22,9 @@ export class AgentSettingsTab extends PluginSettingTab {
     const profile = s.providers[s.providerId];
     const defaults = PROVIDER_DEFAULTS[s.providerId];
 
-    containerEl.createEl("h2", { text: "Obsidian Agent" });
+    containerEl.createEl("h2", { text: t("settings.title") });
 
-    new Setting(containerEl).setName("Provider").addDropdown(d => {
+    new Setting(containerEl).setName(t("settings.provider")).addDropdown(d => {
       for (const id of listProviderIds()) d.addOption(id, id);
       d.setValue(s.providerId).onChange(async v => {
         s.providerId = v as ProviderId;
@@ -34,14 +34,14 @@ export class AgentSettingsTab extends PluginSettingTab {
       });
     });
 
-    new Setting(containerEl).setName("API key").addText(x => {
+    new Setting(containerEl).setName(t("settings.apiKey")).addText(x => {
       wide(x.inputEl);
       x.setValue(profile.apiKey).onChange(async v => { profile.apiKey = v; await this.plugin.saveSettings(); });
     });
 
     new Setting(containerEl)
-      .setName("Base URL")
-      .setDesc(`Leave empty to use default: ${defaults.baseUrl}`)
+      .setName(t("settings.baseUrl"))
+      .setDesc(t("settings.baseUrl.desc", { url: defaults.baseUrl }))
       .addText(x => {
         wide(x.inputEl);
         x.setPlaceholder(defaults.baseUrl)
@@ -50,8 +50,8 @@ export class AgentSettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Model")
-      .setDesc(`Default: ${defaults.model}`)
+      .setName(t("settings.model"))
+      .setDesc(t("settings.model.desc", { model: defaults.model }))
       .addText(x => {
         wide(x.inputEl);
         x.setPlaceholder(defaults.model)
@@ -60,8 +60,8 @@ export class AgentSettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Request timeout (seconds)")
-      .setDesc("Max time to wait for a single LLM response. Increase for slow providers.")
+      .setName(t("settings.timeout"))
+      .setDesc(t("settings.timeout.desc"))
       .addText(x => x
         .setValue(String(Math.round(s.turnTimeoutMs / 1000)))
         .onChange(async v => {
@@ -69,32 +69,39 @@ export class AgentSettingsTab extends PluginSettingTab {
           if (n > 0) { s.turnTimeoutMs = n * 1000; await this.plugin.saveSettings(); }
         }));
 
-    new Setting(containerEl).setName("Default mode").addDropdown(d =>
+    new Setting(containerEl).setName(t("settings.defaultMode")).addDropdown(d =>
       d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit"))
         .setValue(s.mode).onChange(async v => { s.mode = v as any; await this.plugin.saveSettings(); }));
 
-    new Setting(containerEl).setName("Chats folder").addText(x => {
+    new Setting(containerEl).setName(t("settings.chatsFolder")).addText(x => {
       wide(x.inputEl);
       x.setValue(s.chatsFolder).onChange(async v => { s.chatsFolder = v; await this.plugin.saveSettings(); });
     });
 
-    new Setting(containerEl).setName("Language").addDropdown(d =>
-      d.addOption("auto", "Auto").addOption("en", "English").addOption("zh-CN", "中文")
-        .setValue(s.locale).onChange(async v => { s.locale = v as any; await this.plugin.saveSettings(); }));
+    new Setting(containerEl).setName(t("settings.language")).addDropdown(d =>
+      d.addOption("auto", t("settings.language.auto")).addOption("en", "English").addOption("zh-CN", "中文")
+        .setValue(s.locale).onChange(async v => {
+          s.locale = v as any;
+          await this.plugin.saveSettings();
+          // Re-render this tab and the chat view so the new locale takes effect immediately
+          this.display();
+          await this.plugin.reopenChatView();
+        }));
 
-    containerEl.createEl("h3", { text: "Scheduled tasks" });
+    containerEl.createEl("h3", { text: t("settings.scheduled") });
 
-    this.scheduledRow(containerEl, "Daily summary", s.scheduled.dailySummary, false);
-    this.scheduledRow(containerEl, "Weekly review", s.scheduled.weeklyReview, true);
+    this.scheduledRow(containerEl, t("settings.scheduled.daily"), s.scheduled.dailySummary, false);
+    this.scheduledRow(containerEl, t("settings.scheduled.weekly"), s.scheduled.weeklyReview, true);
   }
 
   private scheduledRow(container: HTMLElement, label: string, cfg: any, weekly: boolean) {
+    const t = this.plugin.i18n.t.bind(this.plugin.i18n);
     new Setting(container).setName(label)
-      .addToggle(t => t.setValue(cfg.enabled).onChange(async v => { cfg.enabled = v; await this.plugin.saveSettings(); }))
-      .addText(x => x.setPlaceholder("HH:mm").setValue(cfg.time).onChange(async v => { cfg.time = v; await this.plugin.saveSettings(); }))
-      .addText(x => x.setPlaceholder("folder").setValue(cfg.targetFolder).onChange(async v => { cfg.targetFolder = v; await this.plugin.saveSettings(); }));
+      .addToggle(tg => tg.setValue(cfg.enabled).onChange(async v => { cfg.enabled = v; await this.plugin.saveSettings(); }))
+      .addText(x => x.setPlaceholder(t("settings.scheduled.timePH")).setValue(cfg.time).onChange(async v => { cfg.time = v; await this.plugin.saveSettings(); }))
+      .addText(x => x.setPlaceholder(t("settings.scheduled.folderPH")).setValue(cfg.targetFolder).onChange(async v => { cfg.targetFolder = v; await this.plugin.saveSettings(); }));
     if (weekly) {
-      new Setting(container).setName("Weekday (0=Sun)").addText(x =>
+      new Setting(container).setName(t("settings.scheduled.weekday")).addText(x =>
         x.setValue(String(cfg.weekday ?? 0)).onChange(async v => { cfg.weekday = Number(v); await this.plugin.saveSettings(); }));
     }
   }

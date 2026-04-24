@@ -114,17 +114,54 @@ var en_default = {
   "chat.new": "New chat",
   "chat.mode.ask": "Ask",
   "chat.mode.edit": "Edit",
+  "chat.mode.aria": "Chat mode",
   "chat.compacting": "Compacting conversation\u2026",
+  "chat.placeholder": "Ask anything\u2026 (Shift+Enter for newline)",
+  "chat.empty": "Start a conversation",
+  "chat.emptyHint": "Ask questions about your vault or switch to Edit mode to create and modify notes.",
+  "history.today": "Today",
+  "history.yesterday": "Yesterday",
+  "history.older": "Older",
+  "history.empty": "No saved conversations",
+  "history.newConversation": "New conversation",
+  "chat.you": "You",
+  "chat.agent": "Agent",
+  "chat.thinking": "Agent is thinking",
+  "chat.providerChip": "Active provider / model",
   "diff.approve": "Approve",
   "diff.reject": "Reject",
   "diff.applyAll": "Apply All",
   "diff.rejectAll": "Reject All",
+  "diff.aria": "File diff",
+  "diff.noPreview": "No preview available",
   "summary.created": "{{count}} created",
   "summary.edited": "{{count}} edited",
   "summary.deleted": "{{count}} deleted",
   "error.auth": "Authentication failed. Check Settings.",
   "error.rate": "Rate limit. Retry in a moment.",
   "error.context": "Context too large. Older messages summarized.",
+  "command.open": "Open Agent",
+  "command.newChat": "New chat",
+  "notice.activityLogFailed": "Agent: failed to write activity log",
+  "settings.title": "Obsidian Agent",
+  "settings.provider": "Provider",
+  "settings.apiKey": "API key",
+  "settings.baseUrl": "Base URL",
+  "settings.baseUrl.desc": "Leave empty to use default: {{url}}",
+  "settings.model": "Model",
+  "settings.model.desc": "Default: {{model}}",
+  "settings.timeout": "Request timeout (seconds)",
+  "settings.timeout.desc": "Max time to wait for a single LLM response. Increase for slow providers.",
+  "settings.defaultMode": "Default mode",
+  "settings.chatsFolder": "Chats folder",
+  "settings.language": "Language",
+  "settings.language.auto": "Auto",
+  "settings.scheduled": "Scheduled tasks",
+  "settings.scheduled.daily": "Daily summary",
+  "settings.scheduled.weekly": "Weekly review",
+  "settings.scheduled.weekday": "Weekday (0=Sun)",
+  "settings.scheduled.timePH": "HH:mm",
+  "settings.scheduled.folderPH": "folder",
   "prompt.system.ask": "You are a knowledge-base assistant. Use tools to search and read notes. Cite note paths.",
   "prompt.system.edit": "You are a knowledge-base assistant with editing abilities. All writes require user approval. Produce minimal diffs.",
   "prompt.scheduled.daily": "Summarize notes modified today. Produce one new note with headings per topic and links back.",
@@ -146,17 +183,54 @@ var zh_CN_default = {
   "chat.new": "\u65B0\u5BF9\u8BDD",
   "chat.mode.ask": "\u63D0\u95EE",
   "chat.mode.edit": "\u7F16\u8F91",
-  "chat.compacting": "\u6B63\u5728\u538B\u7F29\u5BF9\u8BDD...",
+  "chat.mode.aria": "\u5BF9\u8BDD\u6A21\u5F0F",
+  "chat.compacting": "\u6B63\u5728\u538B\u7F29\u5BF9\u8BDD\u2026",
+  "chat.placeholder": "\u95EE\u70B9\u4EC0\u4E48\u2026\uFF08Shift+Enter \u6362\u884C\uFF09",
+  "chat.empty": "\u5F00\u59CB\u5BF9\u8BDD",
+  "chat.emptyHint": "\u5C31\u4F60\u7684\u7B14\u8BB0\u4ED3\u5E93\u63D0\u95EE\uFF0C\u6216\u5207\u6362\u5230\u300C\u7F16\u8F91\u300D\u6A21\u5F0F\u4EE5\u521B\u5EFA\u548C\u4FEE\u6539\u7B14\u8BB0\u3002",
+  "history.today": "\u4ECA\u5929",
+  "history.yesterday": "\u6628\u5929",
+  "history.older": "\u66F4\u65E9",
+  "history.empty": "\u6682\u65E0\u4FDD\u5B58\u7684\u5BF9\u8BDD",
+  "history.newConversation": "\u65B0\u5EFA\u5BF9\u8BDD",
+  "chat.you": "\u4F60",
+  "chat.agent": "Agent",
+  "chat.thinking": "Agent \u6B63\u5728\u601D\u8003",
+  "chat.providerChip": "\u5F53\u524D\u63D0\u4F9B\u5546 / \u6A21\u578B",
   "diff.approve": "\u6279\u51C6",
   "diff.reject": "\u62D2\u7EDD",
   "diff.applyAll": "\u5168\u90E8\u5E94\u7528",
   "diff.rejectAll": "\u5168\u90E8\u62D2\u7EDD",
+  "diff.aria": "\u6587\u4EF6\u5DEE\u5F02",
+  "diff.noPreview": "\u65E0\u9884\u89C8",
   "summary.created": "\u65B0\u5EFA {{count}} \u7BC7",
   "summary.edited": "\u4FEE\u6539 {{count}} \u7BC7",
   "summary.deleted": "\u5220\u9664 {{count}} \u7BC7",
   "error.auth": "\u8EAB\u4EFD\u9A8C\u8BC1\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u8BBE\u7F6E\u3002",
   "error.rate": "\u89E6\u53D1\u901F\u7387\u9650\u5236\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
   "error.context": "\u4E0A\u4E0B\u6587\u8FC7\u957F\uFF0C\u5DF2\u5BF9\u8F83\u65E9\u6D88\u606F\u8FDB\u884C\u6458\u8981\u3002",
+  "command.open": "\u6253\u5F00 Agent",
+  "command.newChat": "\u65B0\u5BF9\u8BDD",
+  "notice.activityLogFailed": "Agent\uFF1A\u6D3B\u52A8\u65E5\u5FD7\u5199\u5165\u5931\u8D25",
+  "settings.title": "Obsidian Agent",
+  "settings.provider": "\u63D0\u4F9B\u5546",
+  "settings.apiKey": "API \u5BC6\u94A5",
+  "settings.baseUrl": "Base URL",
+  "settings.baseUrl.desc": "\u7559\u7A7A\u5219\u4F7F\u7528\u9ED8\u8BA4\u5730\u5740\uFF1A{{url}}",
+  "settings.model": "\u6A21\u578B",
+  "settings.model.desc": "\u9ED8\u8BA4\uFF1A{{model}}",
+  "settings.timeout": "\u8BF7\u6C42\u8D85\u65F6\uFF08\u79D2\uFF09",
+  "settings.timeout.desc": "\u7B49\u5F85\u5355\u6B21 LLM \u54CD\u5E94\u7684\u6700\u957F\u65F6\u95F4\u3002\u63D0\u4F9B\u5546\u8F83\u6162\u65F6\u53EF\u9002\u5F53\u8C03\u9AD8\u3002",
+  "settings.defaultMode": "\u9ED8\u8BA4\u6A21\u5F0F",
+  "settings.chatsFolder": "\u5BF9\u8BDD\u5B58\u653E\u6587\u4EF6\u5939",
+  "settings.language": "\u8BED\u8A00",
+  "settings.language.auto": "\u81EA\u52A8",
+  "settings.scheduled": "\u8BA1\u5212\u4EFB\u52A1",
+  "settings.scheduled.daily": "\u6BCF\u65E5\u603B\u7ED3",
+  "settings.scheduled.weekly": "\u6BCF\u5468\u56DE\u987E",
+  "settings.scheduled.weekday": "\u661F\u671F\uFF080=\u5468\u65E5\uFF09",
+  "settings.scheduled.timePH": "HH:mm",
+  "settings.scheduled.folderPH": "\u6587\u4EF6\u5939",
   "prompt.system.ask": "\u4F60\u662F\u4E00\u4F4D\u77E5\u8BC6\u5E93\u52A9\u624B\u3002\u4F7F\u7528\u5DE5\u5177\u641C\u7D22\u548C\u9605\u8BFB\u7B14\u8BB0\uFF0C\u5E76\u5728\u76F8\u5173\u5904\u5F15\u7528\u7B14\u8BB0\u8DEF\u5F84\u3002",
   "prompt.system.edit": "\u4F60\u662F\u4E00\u4F4D\u5177\u5907\u7F16\u8F91\u80FD\u529B\u7684\u77E5\u8BC6\u5E93\u52A9\u624B\u3002\u6240\u6709\u5199\u5165\u90FD\u9700\u8981\u7528\u6237\u6279\u51C6\uFF0C\u8BF7\u751F\u6210\u6700\u5C0F\u5FC5\u8981\u7684\u6539\u52A8\u3002",
   "prompt.scheduled.daily": "\u603B\u7ED3\u4ECA\u5929\u4FEE\u6539\u8FC7\u7684\u7B14\u8BB0\uFF0C\u751F\u6210\u4E00\u7BC7\u65B0\u7B14\u8BB0\uFF0C\u6309\u4E3B\u9898\u5206\u5C0F\u8282\u5E76\u94FE\u63A5\u56DE\u6E90\u7B14\u8BB0\u3002",
@@ -1455,8 +1529,8 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
       s.providers[s.providerId] = defaultProfile(s.providerId);
     const profile = s.providers[s.providerId];
     const defaults = PROVIDER_DEFAULTS[s.providerId];
-    containerEl.createEl("h2", { text: "Obsidian Agent" });
-    new import_obsidian3.Setting(containerEl).setName("Provider").addDropdown((d) => {
+    containerEl.createEl("h2", { text: t("settings.title") });
+    new import_obsidian3.Setting(containerEl).setName(t("settings.provider")).addDropdown((d) => {
       for (const id of listProviderIds())
         d.addOption(id, id);
       d.setValue(s.providerId).onChange(async (v) => {
@@ -1467,66 +1541,69 @@ var AgentSettingsTab = class extends import_obsidian3.PluginSettingTab {
         this.display();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("API key").addText((x) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.apiKey")).addText((x) => {
       wide(x.inputEl);
       x.setValue(profile.apiKey).onChange(async (v) => {
         profile.apiKey = v;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("Base URL").setDesc(`Leave empty to use default: ${defaults.baseUrl}`).addText((x) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.baseUrl")).setDesc(t("settings.baseUrl.desc", { url: defaults.baseUrl })).addText((x) => {
       wide(x.inputEl);
       x.setPlaceholder(defaults.baseUrl).setValue(profile.baseUrl).onChange(async (v) => {
         profile.baseUrl = v.trim();
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("Model").setDesc(`Default: ${defaults.model}`).addText((x) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.model")).setDesc(t("settings.model.desc", { model: defaults.model })).addText((x) => {
       wide(x.inputEl);
       x.setPlaceholder(defaults.model).setValue(profile.model).onChange(async (v) => {
         profile.model = v.trim();
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("Request timeout (seconds)").setDesc("Max time to wait for a single LLM response. Increase for slow providers.").addText((x) => x.setValue(String(Math.round(s.turnTimeoutMs / 1e3))).onChange(async (v) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.timeout")).setDesc(t("settings.timeout.desc")).addText((x) => x.setValue(String(Math.round(s.turnTimeoutMs / 1e3))).onChange(async (v) => {
       const n = parseInt(v, 10);
       if (n > 0) {
         s.turnTimeoutMs = n * 1e3;
         await this.plugin.saveSettings();
       }
     }));
-    new import_obsidian3.Setting(containerEl).setName("Default mode").addDropdown((d) => d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit")).setValue(s.mode).onChange(async (v) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.defaultMode")).addDropdown((d) => d.addOption("ask", t("chat.mode.ask")).addOption("edit", t("chat.mode.edit")).setValue(s.mode).onChange(async (v) => {
       s.mode = v;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("Chats folder").addText((x) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.chatsFolder")).addText((x) => {
       wide(x.inputEl);
       x.setValue(s.chatsFolder).onChange(async (v) => {
         s.chatsFolder = v;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian3.Setting(containerEl).setName("Language").addDropdown((d) => d.addOption("auto", "Auto").addOption("en", "English").addOption("zh-CN", "\u4E2D\u6587").setValue(s.locale).onChange(async (v) => {
+    new import_obsidian3.Setting(containerEl).setName(t("settings.language")).addDropdown((d) => d.addOption("auto", t("settings.language.auto")).addOption("en", "English").addOption("zh-CN", "\u4E2D\u6587").setValue(s.locale).onChange(async (v) => {
       s.locale = v;
       await this.plugin.saveSettings();
+      this.display();
+      await this.plugin.reopenChatView();
     }));
-    containerEl.createEl("h3", { text: "Scheduled tasks" });
-    this.scheduledRow(containerEl, "Daily summary", s.scheduled.dailySummary, false);
-    this.scheduledRow(containerEl, "Weekly review", s.scheduled.weeklyReview, true);
+    containerEl.createEl("h3", { text: t("settings.scheduled") });
+    this.scheduledRow(containerEl, t("settings.scheduled.daily"), s.scheduled.dailySummary, false);
+    this.scheduledRow(containerEl, t("settings.scheduled.weekly"), s.scheduled.weeklyReview, true);
   }
   scheduledRow(container, label2, cfg, weekly) {
-    new import_obsidian3.Setting(container).setName(label2).addToggle((t) => t.setValue(cfg.enabled).onChange(async (v) => {
+    const t = this.plugin.i18n.t.bind(this.plugin.i18n);
+    new import_obsidian3.Setting(container).setName(label2).addToggle((tg) => tg.setValue(cfg.enabled).onChange(async (v) => {
       cfg.enabled = v;
       await this.plugin.saveSettings();
-    })).addText((x) => x.setPlaceholder("HH:mm").setValue(cfg.time).onChange(async (v) => {
+    })).addText((x) => x.setPlaceholder(t("settings.scheduled.timePH")).setValue(cfg.time).onChange(async (v) => {
       cfg.time = v;
       await this.plugin.saveSettings();
-    })).addText((x) => x.setPlaceholder("folder").setValue(cfg.targetFolder).onChange(async (v) => {
+    })).addText((x) => x.setPlaceholder(t("settings.scheduled.folderPH")).setValue(cfg.targetFolder).onChange(async (v) => {
       cfg.targetFolder = v;
       await this.plugin.saveSettings();
     }));
     if (weekly) {
-      new import_obsidian3.Setting(container).setName("Weekday (0=Sun)").addText((x) => x.setValue(String(cfg.weekday ?? 0)).onChange(async (v) => {
+      new import_obsidian3.Setting(container).setName(t("settings.scheduled.weekday")).addText((x) => x.setValue(String(cfg.weekday ?? 0)).onChange(async (v) => {
         cfg.weekday = Number(v);
         await this.plugin.saveSettings();
       }));
@@ -2413,16 +2490,27 @@ function create_if_block_1(ctx) {
 }
 function create_else_block(ctx) {
   let div;
+  let t_1_value = (
+    /*plugin*/
+    ctx[1].i18n.t("diff.noPreview") + ""
+  );
+  let t_1;
   return {
     c() {
       div = element("div");
-      div.textContent = "No preview available";
+      t_1 = text(t_1_value);
       attr(div, "class", "db-no-diff svelte-1l0qhb1");
     },
     m(target, anchor) {
       insert(target, div, anchor);
+      append(div, t_1);
     },
-    p: noop,
+    p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      2 && t_1_value !== (t_1_value = /*plugin*/
+      ctx2[1].i18n.t("diff.noPreview") + ""))
+        set_data(t_1, t_1_value);
+    },
     d(detaching) {
       if (detaching) {
         detach(div);
@@ -2433,6 +2521,7 @@ function create_else_block(ctx) {
 function create_if_block(ctx) {
   let div1;
   let div0;
+  let div1_aria_label_value;
   let each_value = ensure_array_like(
     /*diffLines*/
     ctx[4]
@@ -2451,7 +2540,8 @@ function create_if_block(ctx) {
       attr(div0, "class", "db-diff-inner svelte-1l0qhb1");
       attr(div1, "class", "db-diff svelte-1l0qhb1");
       attr(div1, "role", "region");
-      attr(div1, "aria-label", "File diff");
+      attr(div1, "aria-label", div1_aria_label_value = /*plugin*/
+      ctx[1].i18n.t("diff.aria"));
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -2484,6 +2574,11 @@ function create_if_block(ctx) {
           each_blocks[i].d(1);
         }
         each_blocks.length = each_value.length;
+      }
+      if (dirty & /*plugin*/
+      2 && div1_aria_label_value !== (div1_aria_label_value = /*plugin*/
+      ctx2[1].i18n.t("diff.aria"))) {
+        attr(div1, "aria-label", div1_aria_label_value);
       }
     },
     d(detaching) {
@@ -3397,14 +3492,57 @@ function get_if_ctx(ctx) {
 }
 function create_if_block_10(ctx) {
   let div1;
+  let div0;
+  let t0;
+  let p0;
+  let t1_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.empty") + ""
+  );
+  let t1;
+  let t2;
+  let p1;
+  let t3_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.emptyHint") + ""
+  );
+  let t3;
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-icv7py" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-icv7py">Start a conversation</p> <p class="ml-empty-hint svelte-icv7py">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      div0 = element("div");
+      div0.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+      t0 = space();
+      p0 = element("p");
+      t1 = text(t1_value);
+      t2 = space();
+      p1 = element("p");
+      t3 = text(t3_value);
+      attr(div0, "class", "ml-empty-icon svelte-icv7py");
+      attr(div0, "aria-hidden", "true");
+      attr(p0, "class", "ml-empty-title svelte-icv7py");
+      attr(p1, "class", "ml-empty-hint svelte-icv7py");
       attr(div1, "class", "ml-empty svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
+      append(div1, div0);
+      append(div1, t0);
+      append(div1, p0);
+      append(p0, t1);
+      append(div1, t2);
+      append(div1, p1);
+      append(p1, t3);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t1_value !== (t1_value = /*plugin*/
+      ctx2[3].i18n.t("chat.empty") + ""))
+        set_data(t1, t1_value);
+      if (dirty & /*plugin*/
+      8 && t3_value !== (t3_value = /*plugin*/
+      ctx2[3].i18n.t("chat.emptyHint") + ""))
+        set_data(t3, t3_value);
     },
     d(detaching) {
       if (detaching) {
@@ -3552,6 +3690,11 @@ function create_if_block_8(ctx) {
 function create_if_block_5(ctx) {
   let div1;
   let div0;
+  let t0_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.agent") + ""
+  );
+  let t0;
   let t1;
   let show_if;
   let t2;
@@ -3591,7 +3734,7 @@ function create_if_block_5(ctx) {
     c() {
       div1 = element("div");
       div0 = element("div");
-      div0.textContent = "Agent";
+      t0 = text(t0_value);
       t1 = space();
       if_block.c();
       t2 = space();
@@ -3609,6 +3752,7 @@ function create_if_block_5(ctx) {
     m(target, anchor) {
       insert(target, div1, anchor);
       append(div1, div0);
+      append(div0, t0);
       append(div1, t1);
       if_block.m(div1, null);
       insert(target, t2, anchor);
@@ -3621,6 +3765,10 @@ function create_if_block_5(ctx) {
       current = true;
     },
     p(ctx2, dirty) {
+      if ((!current || dirty & /*plugin*/
+      8) && t0_value !== (t0_value = /*plugin*/
+      ctx2[3].i18n.t("chat.agent") + ""))
+        set_data(t0, t0_value);
       if (current_block_type === (current_block_type = select_block_type_1(ctx2, dirty)) && if_block) {
         if_block.p(ctx2, dirty);
       } else {
@@ -3679,6 +3827,11 @@ function create_if_block_5(ctx) {
 function create_if_block_4(ctx) {
   let div2;
   let div0;
+  let t0_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.you") + ""
+  );
+  let t0;
   let t1;
   let div1;
   let t2_value = (
@@ -3690,7 +3843,7 @@ function create_if_block_4(ctx) {
     c() {
       div2 = element("div");
       div0 = element("div");
-      div0.textContent = "You";
+      t0 = text(t0_value);
       t1 = space();
       div1 = element("div");
       t2 = text(t2_value);
@@ -3701,11 +3854,16 @@ function create_if_block_4(ctx) {
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
+      append(div0, t0);
       append(div2, t1);
       append(div2, div1);
       append(div1, t2);
     },
     p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t0_value !== (t0_value = /*plugin*/
+      ctx2[3].i18n.t("chat.you") + ""))
+        set_data(t0, t0_value);
       if (dirty & /*messages*/
       1 && t2_value !== (t2_value = /*m*/
       ctx2[14].content + ""))
@@ -4065,16 +4223,59 @@ function create_each_block2(key_1, ctx) {
 }
 function create_if_block_32(ctx) {
   let div2;
+  let div0;
+  let t0_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.agent") + ""
+  );
+  let t0;
+  let t1;
+  let div1;
+  let span0;
+  let span1;
+  let span2;
+  let div1_aria_label_value;
   return {
     c() {
       div2 = element("div");
-      div2.innerHTML = `<div class="ml-name ml-name-agent svelte-icv7py">Agent</div> <div class="ml-thinking svelte-icv7py" aria-live="polite" aria-label="Agent is thinking"><span class="ml-dot svelte-icv7py"></span><span class="ml-dot svelte-icv7py"></span><span class="ml-dot svelte-icv7py"></span></div>`;
+      div0 = element("div");
+      t0 = text(t0_value);
+      t1 = space();
+      div1 = element("div");
+      span0 = element("span");
+      span1 = element("span");
+      span2 = element("span");
+      attr(div0, "class", "ml-name ml-name-agent svelte-icv7py");
+      attr(span0, "class", "ml-dot svelte-icv7py");
+      attr(span1, "class", "ml-dot svelte-icv7py");
+      attr(span2, "class", "ml-dot svelte-icv7py");
+      attr(div1, "class", "ml-thinking svelte-icv7py");
+      attr(div1, "aria-live", "polite");
+      attr(div1, "aria-label", div1_aria_label_value = /*plugin*/
+      ctx[3].i18n.t("chat.thinking"));
       attr(div2, "class", "ml-turn ml-turn-agent ml-thinking-turn svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
+      append(div2, div0);
+      append(div0, t0);
+      append(div2, t1);
+      append(div2, div1);
+      append(div1, span0);
+      append(div1, span1);
+      append(div1, span2);
     },
-    p: noop,
+    p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t0_value !== (t0_value = /*plugin*/
+      ctx2[3].i18n.t("chat.agent") + ""))
+        set_data(t0, t0_value);
+      if (dirty & /*plugin*/
+      8 && div1_aria_label_value !== (div1_aria_label_value = /*plugin*/
+      ctx2[3].i18n.t("chat.thinking"))) {
+        attr(div1, "aria-label", div1_aria_label_value);
+      }
+    },
     d(detaching) {
       if (detaching) {
         detach(div2);
@@ -4085,6 +4286,11 @@ function create_if_block_32(ctx) {
 function create_if_block_22(ctx) {
   let div2;
   let div0;
+  let t0_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.agent") + ""
+  );
+  let t0;
   let t1;
   let div1;
   let span0;
@@ -4102,7 +4308,7 @@ function create_if_block_22(ctx) {
     c() {
       div2 = element("div");
       div0 = element("div");
-      div0.textContent = "Agent";
+      t0 = text(t0_value);
       t1 = space();
       div1 = element("div");
       span0 = element("span");
@@ -4125,6 +4331,7 @@ function create_if_block_22(ctx) {
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
+      append(div0, t0);
       append(div2, t1);
       append(div2, div1);
       append(div1, span0);
@@ -4135,6 +4342,10 @@ function create_if_block_22(ctx) {
       append(span3, t3);
     },
     p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t0_value !== (t0_value = /*plugin*/
+      ctx2[3].i18n.t("chat.agent") + ""))
+        set_data(t0, t0_value);
       if (dirty & /*plugin*/
       8 && t3_value !== (t3_value = /*plugin*/
       ctx2[3].i18n.t("chat.compacting") + ""))
@@ -4155,6 +4366,11 @@ function create_if_block_22(ctx) {
 function create_if_block_13(ctx) {
   let div2;
   let div0;
+  let t0_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.agent") + ""
+  );
+  let t0;
   let t1;
   let div1;
   let markdown_action;
@@ -4166,7 +4382,7 @@ function create_if_block_13(ctx) {
     c() {
       div2 = element("div");
       div0 = element("div");
-      div0.textContent = "Agent";
+      t0 = text(t0_value);
       t1 = space();
       div1 = element("div");
       t2 = space();
@@ -4180,6 +4396,7 @@ function create_if_block_13(ctx) {
     m(target, anchor) {
       insert(target, div2, anchor);
       append(div2, div0);
+      append(div0, t0);
       append(div2, t1);
       append(div2, div1);
       append(div2, t2);
@@ -4199,6 +4416,10 @@ function create_if_block_13(ctx) {
       }
     },
     p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t0_value !== (t0_value = /*plugin*/
+      ctx2[3].i18n.t("chat.agent") + ""))
+        set_data(t0, t0_value);
       if (markdown_action && is_function(markdown_action.update) && dirty & /*streamBuf, plugin*/
       10)
         markdown_action.update.call(null, {
@@ -4411,6 +4632,7 @@ function create_fragment3(ctx) {
         ctx2[1];
       if (show_if) {
         if (if_block0) {
+          if_block0.p(ctx2, dirty);
         } else {
           if_block0 = create_if_block_10(ctx2);
           if_block0.c();
@@ -4420,7 +4642,7 @@ function create_fragment3(ctx) {
         if_block0.d(1);
         if_block0 = null;
       }
-      if (dirty & /*messages, pending, plugin, isError, previewResult, firstArgHint, toolCallMap*/
+      if (dirty & /*messages, plugin, pending, isError, previewResult, firstArgHint, toolCallMap*/
       141) {
         each_value = ensure_array_like(
           /*messages*/
@@ -4640,6 +4862,7 @@ function create_fragment4(ctx) {
   );
   let t4;
   let button1_aria_pressed_value;
+  let div_aria_label_value;
   let mounted;
   let dispose;
   return {
@@ -4705,7 +4928,8 @@ function create_fragment4(ctx) {
       );
       attr(div, "class", "mt-root svelte-14w3f6r");
       attr(div, "role", "group");
-      attr(div, "aria-label", "Chat mode");
+      attr(div, "aria-label", div_aria_label_value = /*plugin*/
+      ctx[0].i18n.t("chat.mode.aria"));
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -4777,6 +5001,11 @@ function create_fragment4(ctx) {
           ctx2[1] === "edit"
         );
       }
+      if (dirty & /*plugin*/
+      1 && div_aria_label_value !== (div_aria_label_value = /*plugin*/
+      ctx2[0].i18n.t("chat.mode.aria"))) {
+        attr(div, "aria-label", div_aria_label_value);
+      }
     },
     i: noop,
     o: noop,
@@ -4818,19 +5047,22 @@ var ModeToggle_default = ModeToggle;
 var { Map: Map_12 } = globals;
 function get_each_context3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[8] = list[i];
+  child_ctx[12] = list[i];
   return child_ctx;
 }
 function get_each_context_12(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[11] = list[i];
-  const constants_0 = rowDate(
-    /*p*/
-    child_ctx[11],
-    /*group*/
-    child_ctx[8].label
+  child_ctx[15] = list[i];
+  const constants_0 = (
+    /*rowDate*/
+    child_ctx[5](
+      /*p*/
+      child_ctx[15],
+      /*group*/
+      child_ctx[12].key
+    )
   );
-  child_ctx[12] = constants_0;
+  child_ctx[16] = constants_0;
   return child_ctx;
 }
 function create_else_block3(ctx) {
@@ -4843,7 +5075,7 @@ function create_else_block3(ctx) {
   );
   const get_key = (ctx2) => (
     /*group*/
-    ctx2[8].label
+    ctx2[12].key
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context3(ctx, each_value, i);
@@ -4867,7 +5099,7 @@ function create_else_block3(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty & /*groups, active, undefined, open, rowDate, label*/
-      7) {
+      39) {
         each_value = ensure_array_like(
           /*groups*/
           ctx2[1]
@@ -4890,7 +5122,8 @@ function create_if_block4(ctx) {
   return {
     c() {
       div = element("div");
-      div.textContent = "No saved conversations";
+      div.textContent = `${/*t*/
+      ctx[4]("history.empty")}`;
       attr(div, "class", "cl-empty svelte-19fxzhc");
     },
     m(target, anchor) {
@@ -4906,26 +5139,26 @@ function create_if_block4(ctx) {
 }
 function create_if_block_14(ctx) {
   let span;
-  let t_value = (
+  let t_1_value = (
     /*d*/
-    ctx[12] + ""
+    ctx[16] + ""
   );
-  let t;
+  let t_1;
   return {
     c() {
       span = element("span");
-      t = text(t_value);
+      t_1 = text(t_1_value);
       attr(span, "class", "cl-date svelte-19fxzhc");
     },
     m(target, anchor) {
       insert(target, span, anchor);
-      append(span, t);
+      append(span, t_1);
     },
     p(ctx2, dirty) {
       if (dirty & /*groups*/
-      2 && t_value !== (t_value = /*d*/
-      ctx2[12] + ""))
-        set_data(t, t_value);
+      2 && t_1_value !== (t_1_value = /*d*/
+      ctx2[16] + ""))
+        set_data(t_1, t_1_value);
     },
     d(detaching) {
       if (detaching) {
@@ -4942,7 +5175,7 @@ function create_each_block_12(key_1, ctx) {
   let span;
   let t1_value = label(
     /*p*/
-    ctx[11]
+    ctx[15]
   ) + "";
   let t1;
   let t2;
@@ -4953,14 +5186,14 @@ function create_each_block_12(key_1, ctx) {
   let dispose;
   let if_block = (
     /*d*/
-    ctx[12] && create_if_block_14(ctx)
+    ctx[16] && create_if_block_14(ctx)
   );
   function click_handler() {
     return (
       /*click_handler*/
-      ctx[6](
+      ctx[8](
         /*p*/
-        ctx[11]
+        ctx[15]
       )
     );
   }
@@ -4992,15 +5225,15 @@ function create_each_block_12(key_1, ctx) {
       attr(span, "class", "cl-label svelte-19fxzhc");
       attr(button, "class", "cl-item svelte-19fxzhc");
       attr(button, "title", button_title_value = /*p*/
-      ctx[11]);
+      ctx[15]);
       attr(button, "aria-current", button_aria_current_value = /*p*/
-      ctx[11] === /*active*/
+      ctx[15] === /*active*/
       ctx[0] ? "page" : void 0);
       toggle_class(
         button,
         "cl-active",
         /*p*/
-        ctx[11] === /*active*/
+        ctx[15] === /*active*/
         ctx[0]
       );
       this.first = button;
@@ -5026,12 +5259,12 @@ function create_each_block_12(key_1, ctx) {
       if (dirty & /*groups*/
       2 && t1_value !== (t1_value = label(
         /*p*/
-        ctx[11]
+        ctx[15]
       ) + ""))
         set_data(t1, t1_value);
       if (
         /*d*/
-        ctx[12]
+        ctx[16]
       ) {
         if (if_block) {
           if_block.p(ctx, dirty);
@@ -5046,12 +5279,12 @@ function create_each_block_12(key_1, ctx) {
       }
       if (dirty & /*groups*/
       2 && button_title_value !== (button_title_value = /*p*/
-      ctx[11])) {
+      ctx[15])) {
         attr(button, "title", button_title_value);
       }
       if (dirty & /*groups, active*/
       3 && button_aria_current_value !== (button_aria_current_value = /*p*/
-      ctx[11] === /*active*/
+      ctx[15] === /*active*/
       ctx[0] ? "page" : void 0)) {
         attr(button, "aria-current", button_aria_current_value);
       }
@@ -5061,7 +5294,7 @@ function create_each_block_12(key_1, ctx) {
           button,
           "cl-active",
           /*p*/
-          ctx[11] === /*active*/
+          ctx[15] === /*active*/
           ctx[0]
         );
       }
@@ -5081,7 +5314,7 @@ function create_each_block3(key_1, ctx) {
   let div;
   let t0_value = (
     /*group*/
-    ctx[8].label + ""
+    ctx[12].label + ""
   );
   let t0;
   let t1;
@@ -5090,11 +5323,11 @@ function create_each_block3(key_1, ctx) {
   let each_1_anchor;
   let each_value_1 = ensure_array_like(
     /*group*/
-    ctx[8].paths
+    ctx[12].paths
   );
   const get_key = (ctx2) => (
     /*p*/
-    ctx2[11]
+    ctx2[15]
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
     let child_ctx = get_each_context_12(ctx, each_value_1, i);
@@ -5130,13 +5363,13 @@ function create_each_block3(key_1, ctx) {
       ctx = new_ctx;
       if (dirty & /*groups*/
       2 && t0_value !== (t0_value = /*group*/
-      ctx[8].label + ""))
+      ctx[12].label + ""))
         set_data(t0, t0_value);
       if (dirty & /*groups, active, undefined, open, rowDate, label*/
-      7) {
+      39) {
         each_value_1 = ensure_array_like(
           /*group*/
-          ctx[8].paths
+          ctx[12].paths
         );
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_12, each_1_anchor, get_each_context_12);
       }
@@ -5157,6 +5390,15 @@ function create_fragment5(ctx) {
   let div;
   let t0;
   let button;
+  let svg;
+  let line0;
+  let line1;
+  let t1;
+  let t2_value = (
+    /*t*/
+    ctx[4]("history.newConversation") + ""
+  );
+  let t2;
   let mounted;
   let dispose;
   function select_block_type(ctx2, dirty) {
@@ -5175,8 +5417,26 @@ function create_fragment5(ctx) {
       if_block.c();
       t0 = space();
       button = element("button");
-      button.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    New conversation`;
+      svg = svg_element("svg");
+      line0 = svg_element("line");
+      line1 = svg_element("line");
+      t1 = space();
+      t2 = text(t2_value);
+      attr(line0, "x1", "12");
+      attr(line0, "y1", "5");
+      attr(line0, "x2", "12");
+      attr(line0, "y2", "19");
+      attr(line1, "x1", "5");
+      attr(line1, "y1", "12");
+      attr(line1, "x2", "19");
+      attr(line1, "y2", "12");
+      attr(svg, "width", "11");
+      attr(svg, "height", "11");
+      attr(svg, "viewBox", "0 0 24 24");
+      attr(svg, "fill", "none");
+      attr(svg, "stroke", "currentColor");
+      attr(svg, "stroke-width", "2.5");
+      attr(svg, "aria-hidden", "true");
       attr(button, "class", "cl-new-btn svelte-19fxzhc");
       attr(div, "class", "cl-root svelte-19fxzhc");
       attr(div, "role", "navigation");
@@ -5186,6 +5446,11 @@ function create_fragment5(ctx) {
       if_block.m(div, null);
       append(div, t0);
       append(div, button);
+      append(button, svg);
+      append(svg, line0);
+      append(svg, line1);
+      append(button, t1);
+      append(button, t2);
       if (!mounted) {
         dispose = listen(
           button,
@@ -5220,6 +5485,9 @@ function create_fragment5(ctx) {
     }
   };
 }
+var GROUP_TODAY = "__today__";
+var GROUP_YESTERDAY = "__yesterday__";
+var GROUP_OLDER = "__older__";
 function label(p) {
   return (p.split("/").pop() ?? p).replace(/\.md$/i, "");
 }
@@ -5229,67 +5497,18 @@ function formatDate(d) {
   const dy = String(d.getDate()).padStart(2, "0");
   return `${y}-${mo}-${dy}`;
 }
-function dateLabel(p) {
+function groupKey(p) {
   const today = /* @__PURE__ */ new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
   const m = p.match(/(\d{4}-\d{2}-\d{2})/);
   if (!m)
-    return "Older";
+    return GROUP_OLDER;
   if (m[1] === formatDate(today))
-    return "Today";
+    return GROUP_TODAY;
   if (m[1] === formatDate(yesterday))
-    return "Yesterday";
+    return GROUP_YESTERDAY;
   return m[1];
-}
-function rowDate(p, groupLbl) {
-  if (groupLbl === "Today" || groupLbl === "Yesterday")
-    return "";
-  const m = p.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (!m)
-    return "";
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec"
-  ];
-  return `${months[parseInt(m[2]) - 1]} ${parseInt(m[3])}`;
-}
-function groupPaths(ps) {
-  const map = /* @__PURE__ */ new Map();
-  for (const p of ps) {
-    const key = dateLabel(p);
-    if (!map.has(key))
-      map.set(key, []);
-    map.get(key).push(p);
-  }
-  const pinned = ["Today", "Yesterday"];
-  const entries = [...map.entries()];
-  entries.sort(([a], [b]) => {
-    const ia = pinned.indexOf(a);
-    const ib = pinned.indexOf(b);
-    if (ia !== -1 && ib !== -1)
-      return ia - ib;
-    if (ia !== -1)
-      return -1;
-    if (ib !== -1)
-      return 1;
-    if (a === "Older")
-      return 1;
-    if (b === "Older")
-      return -1;
-    return b.localeCompare(a);
-  });
-  return entries.map(([lbl, items]) => ({ label: lbl, paths: items }));
 }
 function instance5($$self, $$props, $$invalidate) {
   let groups;
@@ -5298,7 +5517,7 @@ function instance5($$self, $$props, $$invalidate) {
   let paths = [];
   let active = plugin.currentConversation?.path ?? "";
   onMount(async () => {
-    $$invalidate(5, paths = await plugin.conversations.list());
+    $$invalidate(7, paths = await plugin.conversations.list());
   });
   async function open(p) {
     await plugin.openConversation(p);
@@ -5308,24 +5527,78 @@ function instance5($$self, $$props, $$invalidate) {
   function startNew() {
     dispatch("newChat");
   }
+  const t = (k, v) => plugin.i18n.t(k, v);
+  function groupDisplay(key) {
+    if (key === GROUP_TODAY)
+      return t("history.today");
+    if (key === GROUP_YESTERDAY)
+      return t("history.yesterday");
+    if (key === GROUP_OLDER)
+      return t("history.older");
+    return key;
+  }
+  function rowDate(p, key) {
+    if (key === GROUP_TODAY || key === GROUP_YESTERDAY)
+      return "";
+    const m = p.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m)
+      return "";
+    const date = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    try {
+      return new Intl.DateTimeFormat(plugin.i18n.getLocale?.() ?? void 0, { month: "short", day: "numeric" }).format(date);
+    } catch {
+      return `${m[2]}-${m[3]}`;
+    }
+  }
+  function groupPaths(ps) {
+    const map = /* @__PURE__ */ new Map();
+    for (const p of ps) {
+      const k = groupKey(p);
+      if (!map.has(k))
+        map.set(k, []);
+      map.get(k).push(p);
+    }
+    const pinned = [GROUP_TODAY, GROUP_YESTERDAY];
+    const entries = [...map.entries()];
+    entries.sort(([a], [b]) => {
+      const ia = pinned.indexOf(a);
+      const ib = pinned.indexOf(b);
+      if (ia !== -1 && ib !== -1)
+        return ia - ib;
+      if (ia !== -1)
+        return -1;
+      if (ib !== -1)
+        return 1;
+      if (a === GROUP_OLDER)
+        return 1;
+      if (b === GROUP_OLDER)
+        return -1;
+      return b.localeCompare(a);
+    });
+    return entries.map(([k, items]) => ({
+      key: k,
+      label: groupDisplay(k),
+      paths: items
+    }));
+  }
   const click_handler = (p) => open(p);
   $$self.$$set = ($$props2) => {
     if ("plugin" in $$props2)
-      $$invalidate(4, plugin = $$props2.plugin);
+      $$invalidate(6, plugin = $$props2.plugin);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*paths*/
-    32) {
+    128) {
       $:
         $$invalidate(1, groups = groupPaths(paths));
     }
   };
-  return [active, groups, open, startNew, plugin, paths, click_handler];
+  return [active, groups, open, startNew, t, rowDate, plugin, paths, click_handler];
 }
 var ConversationList = class extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 4 });
+    init(this, options, instance5, create_fragment5, safe_not_equal, { plugin: 6 });
   }
 };
 var ConversationList_default = ConversationList;
@@ -5584,6 +5857,7 @@ function create_fragment6(ctx) {
   let span0;
   let t1;
   let t2;
+  let span1_title_value;
   let t3;
   let div0;
   let modetoggle;
@@ -5733,7 +6007,8 @@ function create_fragment6(ctx) {
       attr(span0, "class", "ac-provider-dot svelte-9ylsa4");
       attr(span0, "aria-hidden", "true");
       attr(span1, "class", "ac-provider-chip svelte-9ylsa4");
-      attr(span1, "title", "Active provider / model");
+      attr(span1, "title", span1_title_value = /*t*/
+      ctx[18]("chat.providerChip"));
       attr(line0, "x1", "12");
       attr(line0, "y1", "5");
       attr(line0, "x2", "12");
@@ -5761,7 +6036,7 @@ function create_fragment6(ctx) {
       attr(textarea_1, "placeholder", textarea_1_placeholder_value = /*busy*/
       ctx[3] ? "" : (
         /*t*/
-        ctx[18]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
+        ctx[18]("chat.placeholder")
       ));
       textarea_1.disabled = /*busy*/
       ctx[3];
@@ -5942,7 +6217,7 @@ function create_fragment6(ctx) {
       8 && textarea_1_placeholder_value !== (textarea_1_placeholder_value = /*busy*/
       ctx2[3] ? "" : (
         /*t*/
-        ctx2[18]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
+        ctx2[18]("chat.placeholder")
       ))) {
         attr(textarea_1, "placeholder", textarea_1_placeholder_value);
       }
@@ -6262,9 +6537,9 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     this.currentConversation = this.newConversation();
     this.addSettingTab(new AgentSettingsTab(this.app, this));
     this.registerView(VIEW_TYPE_AGENT_CHAT, (leaf) => new AgentChatView(leaf, this));
-    this.addRibbonIcon("bot", "Open Agent", () => this.activateView());
-    this.addCommand({ id: "open-agent", name: "Open Agent", callback: () => this.activateView() });
-    this.addCommand({ id: "new-agent-chat", name: "New chat", callback: () => this.startNewConversation() });
+    this.addRibbonIcon("bot", this.i18n.t("command.open"), () => this.activateView());
+    this.addCommand({ id: "open-agent", name: this.i18n.t("command.open"), callback: () => this.activateView() });
+    this.addCommand({ id: "new-agent-chat", name: this.i18n.t("command.newChat"), callback: () => this.startNewConversation() });
     this.statusBar = new StatusBar(this, this.addStatusBarItem());
     this.scheduler = new SchedulerService(() => this.settings, (kind, cfg) => this.runScheduled(kind, cfg));
     this.scheduler.start();
@@ -6471,7 +6746,7 @@ ${p.args.content}`;
       try {
         await this.vault.createNote(path, line + "\n");
       } catch {
-        new import_obsidian6.Notice("Agent: failed to write activity log");
+        new import_obsidian6.Notice(this.i18n.t("notice.activityLogFailed"));
       }
     }
   }
@@ -6482,6 +6757,15 @@ ${p.args.content}`;
       await leaf.setViewState({ type: VIEW_TYPE_AGENT_CHAT, active: true });
     }
     this.app.workspace.revealLeaf(leaf);
+  }
+  /** Detach + reopen the chat view so Svelte components re-render with the current locale. */
+  async reopenChatView() {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AGENT_CHAT);
+    if (!leaves.length)
+      return;
+    for (const leaf of leaves)
+      leaf.detach();
+    await this.activateView();
   }
 };
 function simpleDiff(a, b) {

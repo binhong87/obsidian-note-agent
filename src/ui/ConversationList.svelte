@@ -31,35 +31,56 @@
     return `${y}-${mo}-${dy}`;
   }
 
-  function dateLabel(p: string): string {
+  const t = (k: string, v?: any) => plugin.i18n.t(k, v);
+
+  // Sentinel group keys — resolved to localized strings at render time
+  const GROUP_TODAY = "__today__";
+  const GROUP_YESTERDAY = "__yesterday__";
+  const GROUP_OLDER = "__older__";
+
+  function groupKey(p: string): string {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const m = p.match(/(\d{4}-\d{2}-\d{2})/);
-    if (!m) return "Older";
-    if (m[1] === formatDate(today)) return "Today";
-    if (m[1] === formatDate(yesterday)) return "Yesterday";
+    if (!m) return GROUP_OLDER;
+    if (m[1] === formatDate(today)) return GROUP_TODAY;
+    if (m[1] === formatDate(yesterday)) return GROUP_YESTERDAY;
     return m[1];
   }
 
-  function rowDate(p: string, groupLbl: string): string {
-    if (groupLbl === "Today" || groupLbl === "Yesterday") return "";
-    const m = p.match(/(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return "";
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return `${months[parseInt(m[2]) - 1]} ${parseInt(m[3])}`;
+  function groupDisplay(key: string): string {
+    if (key === GROUP_TODAY) return t("history.today");
+    if (key === GROUP_YESTERDAY) return t("history.yesterday");
+    if (key === GROUP_OLDER) return t("history.older");
+    return key;
   }
 
-  type Group = { label: string; paths: string[] };
+  function rowDate(p: string, key: string): string {
+    if (key === GROUP_TODAY || key === GROUP_YESTERDAY) return "";
+    const m = p.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return "";
+    const date = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    try {
+      return new Intl.DateTimeFormat(plugin.i18n.getLocale?.() ?? undefined, {
+        month: "short",
+        day: "numeric",
+      }).format(date);
+    } catch {
+      return `${m[2]}-${m[3]}`;
+    }
+  }
+
+  type Group = { key: string; label: string; paths: string[] };
 
   function groupPaths(ps: string[]): Group[] {
     const map = new Map<string, string[]>();
     for (const p of ps) {
-      const key = dateLabel(p);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(p);
+      const k = groupKey(p);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(p);
     }
-    const pinned = ["Today", "Yesterday"];
+    const pinned = [GROUP_TODAY, GROUP_YESTERDAY];
     const entries = [...map.entries()];
     entries.sort(([a], [b]) => {
       const ia = pinned.indexOf(a);
@@ -67,11 +88,11 @@
       if (ia !== -1 && ib !== -1) return ia - ib;
       if (ia !== -1) return -1;
       if (ib !== -1) return 1;
-      if (a === "Older") return 1;
-      if (b === "Older") return -1;
+      if (a === GROUP_OLDER) return 1;
+      if (b === GROUP_OLDER) return -1;
       return b.localeCompare(a);
     });
-    return entries.map(([lbl, items]) => ({ label: lbl, paths: items }));
+    return entries.map(([k, items]) => ({ key: k, label: groupDisplay(k), paths: items }));
   }
 
   $: groups = groupPaths(paths);
@@ -79,12 +100,12 @@
 
 <div class="cl-root" role="navigation">
   {#if groups.length === 0}
-    <div class="cl-empty">No saved conversations</div>
+    <div class="cl-empty">{t("history.empty")}</div>
   {:else}
-    {#each groups as group (group.label)}
+    {#each groups as group (group.key)}
       <div class="cl-section-label">{group.label}</div>
       {#each group.paths as p (p)}
-        {@const d = rowDate(p, group.label)}
+        {@const d = rowDate(p, group.key)}
         <button
           class="cl-item"
           class:cl-active={p === active}
@@ -102,7 +123,7 @@
 
   <button class="cl-new-btn" on:click={startNew}>
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    New conversation
+    {t("history.newConversation")}
   </button>
 </div>
 
