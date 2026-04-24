@@ -1,5 +1,6 @@
 import type { ChatRequest, Delta, LLMProvider } from "./types";
 import { httpSSE } from "./http";
+import { lookupModelCaps } from "./model-caps";
 
 export interface AnthropicConfig { apiKey: string; baseUrl?: string; }
 type SSEIter = (o: any) => AsyncIterable<{ data: string }>;
@@ -10,11 +11,20 @@ export class AnthropicProvider implements LLMProvider {
 
   async *chat(req: ChatRequest): AsyncIterable<Delta> {
     const url = (this.cfg.baseUrl || "https://api.anthropic.com") + "/v1/messages";
-    const system = req.messages.filter(m => m.role === "system").map(m => m.content).join("\n\n");
+    const caps = lookupModelCaps("anthropic", req.model);
+    const useCache = caps.supportsPromptCache;
+
+    const sysText = req.messages.filter(m => m.role === "system").map(m => m.content).join("\n\n");
+    // When using a cache-capable model, send system as a structured array with cache_control
+    // so the Anthropic API caches the stable prefix across turns.
+    const system = useCache && sysText
+      ? [{ type: "text", text: sysText, cache_control: { type: "ephemeral" } }]
+      : (sysText || undefined);
+
     const msgs = req.messages.filter(m => m.role !== "system").map(m => this.toAnthropic(m));
     const body = {
       model: req.model, max_tokens: 4096, stream: true,
-      system: system || undefined, messages: msgs,
+      system, messages: msgs,
       tools: req.tools.length ? req.tools.map(t => ({ name: t.name, description: t.description, input_schema: t.parameters })) : undefined,
       temperature: req.temperature,
     };
@@ -24,6 +34,7 @@ export class AnthropicProvider implements LLMProvider {
         "content-type": "application/json",
         "x-api-key": this.cfg.apiKey,
         "anthropic-version": "2023-06-01",
+        ...(useCache ? { "anthropic-beta": "prompt-caching-2024-07-31" } : {}),
       },
       body: JSON.stringify(body), signal: req.signal,
     });

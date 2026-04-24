@@ -17,7 +17,14 @@ export interface Settings {
   locale: Locale;
   maxIterations: number;
   turnTimeoutMs: number;
+  /** Legacy history cap in approx-tokens. 0 = derive from model's context window. */
   historyTokenBudget: number;
+  /** Tokens to reserve for the model's response when computing effective context budget. */
+  responseReserveTokens: number;
+  /** Fraction of effective budget at which auto-compaction triggers (0–1). */
+  autoCompactThreshold: number;
+  /** Number of most-recent turn-groups to keep verbatim during compaction. */
+  keepLastTurns: number;
   scheduled: {
     dailySummary: ScheduledTaskSetting;
     weeklyReview: ScheduledTaskSetting;
@@ -34,7 +41,10 @@ export const DEFAULT_SETTINGS: Settings = {
   locale: "auto",
   maxIterations: 25,
   turnTimeoutMs: 300_000,
-  historyTokenBudget: 32_000,
+  historyTokenBudget: 0,       // 0 = auto (derive from model caps)
+  responseReserveTokens: 4096,
+  autoCompactThreshold: 0.75,
+  keepLastTurns: 6,
   scheduled: {
     dailySummary: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/daily" },
     weeklyReview: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/weekly", weekday: 0 },

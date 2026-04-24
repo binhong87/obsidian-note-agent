@@ -4,17 +4,22 @@ import type { Tool } from "../tools/types";
 import { PENDING_PREFIX } from "../tools/write";
 import type { ApprovalQueue } from "./approval-queue";
 import { Conversation } from "./conversation";
-import { trimHistory } from "./history-trimmer";
+
+export interface PrepareContextResult {
+  messages: Message[];
+  cacheableBoundary: number;
+}
 
 export interface AgentLoopOpts {
   provider: LLMProvider;
   conversation: Conversation;
   tools: Tool[];
   approvalQueue: ApprovalQueue;
-  systemPrompt: string;
   maxIterations: number;
   turnTimeoutMs: number;
-  historyBudget: number;
+  /** Called before each iteration to produce the message list sent to the provider.
+   *  Replaces the old historyBudget + trimHistory path; may trigger compaction. */
+  prepareContext: () => Promise<PrepareContextResult>;
   computeDiff?: (pending: { tool: string; args: Record<string, unknown> }) => Promise<string>;
 }
 
@@ -35,14 +40,16 @@ export class AgentLoop {
   }
 
   async *run(): AsyncIterable<LoopEvent> {
-    const { provider, conversation, tools, approvalQueue, systemPrompt, maxIterations, historyBudget, turnTimeoutMs } = this.opts;
+    const { provider, conversation, tools, approvalQueue, maxIterations, turnTimeoutMs } = this.opts;
     for (let i = 0; i < maxIterations; i++) {
       if (this.abort.signal.aborted) { yield { type: "stopped", reason: "cancelled" }; return; }
-      const withSys: Message[] = [{ role: "system", content: systemPrompt }, ...conversation.messages];
-      const trimmed = trimHistory(withSys, historyBudget);
+
+      // Prepare context (may block for compaction)
+      const { messages: preparedMsgs, cacheableBoundary } = await this.opts.prepareContext();
+      console.debug(`[agent] iteration ${i}, history: ${preparedMsgs.length} msgs, cacheableBoundary: ${cacheableBoundary}`);
+
       const assistantMsg: Message = { role: "assistant", content: "", toolCalls: [] };
       let stoppedEarly = false;
-      console.debug(`[agent] iteration ${i}, history: ${trimmed.length} msgs`);
 
       // Per-iteration abort that fires on either outer cancel or turn timeout.
       const iterAbort = new AbortController();
@@ -51,8 +58,10 @@ export class AgentLoop {
       const timer = setTimeout(() => { console.warn("[agent] turn timeout"); iterAbort.abort(); }, turnTimeoutMs);
       try {
         for await (const d of provider.chat({
-          model: conversation.model, messages: trimmed,
-          tools: tools.map(t => t.schema), signal: iterAbort.signal,
+          model: conversation.model, messages: preparedMsgs,
+          tools: tools.map(t => t.schema),
+          cacheableBoundary,
+          signal: iterAbort.signal,
         })) {
           if (d.type === "text" && d.text) { assistantMsg.content += d.text; yield { type: "text", text: d.text }; }
           else if (d.type === "tool_call" && d.toolCall) { assistantMsg.toolCalls!.push(d.toolCall); }

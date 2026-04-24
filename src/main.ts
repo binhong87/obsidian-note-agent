@@ -9,6 +9,7 @@ import { buildToolRegistry } from "./tools/registry";
 import { Conversation } from "./agent/conversation";
 import { ApprovalQueue } from "./agent/approval-queue";
 import { AgentLoop } from "./agent/agent-loop";
+import { ContextManager } from "./agent/context-manager";
 import { systemPromptKey } from "./agent/mode-gate";
 import { AgentSettingsTab } from "./ui/SettingsTab";
 import { AgentChatView, VIEW_TYPE_AGENT_CHAT } from "./ui/chat-view";
@@ -25,7 +26,10 @@ export default class ObsidianAgentPlugin extends Plugin {
   scheduler!: SchedulerService;
   statusBar!: StatusBar;
   lastTurnSummary: { created: string[]; edited: string[]; deleted: string[] } = { created: [], edited: [], deleted: [] };
+  /** True while a compaction pass is running — read by MessageList.svelte. */
+  compacting = false;
   private summaryListeners = new Set<(s: typeof this.lastTurnSummary) => void>();
+  private compactingListeners = new Set<(v: boolean) => void>();
   private currentLoop: AgentLoop | null = null;
 
   async onload() {
@@ -68,6 +72,12 @@ export default class ObsidianAgentPlugin extends Plugin {
   onSummaryChange(fn: (s: typeof this.lastTurnSummary) => void) { this.summaryListeners.add(fn); }
   private emitSummary() { for (const l of this.summaryListeners) l(this.lastTurnSummary); }
 
+  onCompactingChange(fn: (v: boolean) => void) { this.compactingListeners.add(fn); return () => this.compactingListeners.delete(fn); }
+  private setCompacting(v: boolean) {
+    this.compacting = v;
+    for (const l of this.compactingListeners) l(v);
+  }
+
   async *sendMessage(text: string) {
     const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
     // Sync model/provider from current settings so changes take effect immediately
@@ -87,21 +97,49 @@ export default class ObsidianAgentPlugin extends Plugin {
     };
     const tools = buildToolRegistry(ctx, this.currentConversation.mode);
     this.lastTurnSummary = { created: [], edited: [], deleted: [] };
+
+    const ctxMgr = new ContextManager({
+      conversation: this.currentConversation,
+      systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
+      provider,
+      model: this.settings.model,
+      providerId: this.settings.providerId,
+      settings: {
+        historyTokenBudget: this.settings.historyTokenBudget,
+        responseReserveTokens: this.settings.responseReserveTokens,
+        autoCompactThreshold: this.settings.autoCompactThreshold,
+        keepLastTurns: this.settings.keepLastTurns,
+      },
+      onStatus: (s) => {
+        if (s === "compacting") {
+          this.setCompacting(true);
+          this.statusBar.render("compacting");
+        } else {
+          this.setCompacting(false);
+          this.statusBar.render("thinking");
+        }
+      },
+      onCompacted: async () => {
+        await this.conversations.save(this.currentConversation);
+      },
+      i18n: this.i18n,
+    });
+
     this.currentLoop = new AgentLoop({
       provider,
       conversation: this.currentConversation,
       tools,
       approvalQueue: this.approvalQueue,
-      systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
+      prepareContext: () => ctxMgr.prepare(),
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
-      historyBudget: this.settings.historyTokenBudget,
       computeDiff: (p) => this.computeDiff(p),
     });
     this.statusBar.render("thinking");
     try { yield* this.currentLoop.send(text); }
     finally {
       this.statusBar.render("idle");
+      this.setCompacting(false);
       this.currentLoop = null;
       await this.conversations.save(this.currentConversation);
       this.emitSummary();
@@ -143,13 +181,29 @@ export default class ObsidianAgentPlugin extends Plugin {
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");
     const promptKey = kind === "daily" ? "prompt.scheduled.daily" : "prompt.scheduled.weekly";
+    const systemPrompt = this.i18n.t(promptKey);
     conv.append({ role: "user", content: `Target folder: ${cfg.targetFolder}` });
+
+    const ctxMgr = new ContextManager({
+      conversation: conv,
+      systemPrompt,
+      provider,
+      model: this.settings.model,
+      providerId: this.settings.providerId,
+      settings: {
+        historyTokenBudget: this.settings.historyTokenBudget,
+        responseReserveTokens: this.settings.responseReserveTokens,
+        autoCompactThreshold: this.settings.autoCompactThreshold,
+        keepLastTurns: this.settings.keepLastTurns,
+      },
+      i18n: this.i18n,
+    });
+
     const loop = new AgentLoop({
       provider, conversation: conv, tools, approvalQueue: this.approvalQueue,
-      systemPrompt: this.i18n.t(promptKey),
+      prepareContext: () => ctxMgr.prepare(),
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
-      historyBudget: this.settings.historyTokenBudget,
     });
     for await (const _ of loop.run()) { /* drain */ }
     await this.approvalQueue.approveAll();

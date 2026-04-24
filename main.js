@@ -41,7 +41,11 @@ var DEFAULT_SETTINGS = {
   locale: "auto",
   maxIterations: 25,
   turnTimeoutMs: 3e5,
-  historyTokenBudget: 32e3,
+  historyTokenBudget: 0,
+  // 0 = auto (derive from model caps)
+  responseReserveTokens: 4096,
+  autoCompactThreshold: 0.75,
+  keepLastTurns: 6,
   scheduled: {
     dailySummary: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/daily" },
     weeklyReview: { enabled: false, time: "22:00", targetFolder: "_agent/summaries/weekly", weekday: 0 }
@@ -65,6 +69,7 @@ var en_default = {
   "chat.new": "New chat",
   "chat.mode.ask": "Ask",
   "chat.mode.edit": "Edit",
+  "chat.compacting": "Compacting conversation\u2026",
   "diff.approve": "Approve",
   "diff.reject": "Reject",
   "diff.applyAll": "Apply All",
@@ -78,7 +83,15 @@ var en_default = {
   "prompt.system.ask": "You are a knowledge-base assistant. Use tools to search and read notes. Cite note paths.",
   "prompt.system.edit": "You are a knowledge-base assistant with editing abilities. All writes require user approval. Produce minimal diffs.",
   "prompt.scheduled.daily": "Summarize notes modified today. Produce one new note with headings per topic and links back.",
-  "prompt.scheduled.weekly": "Produce a weekly review of the past 7 days. Highlight themes and open loops in one new note."
+  "prompt.scheduled.weekly": "Produce a weekly review of the past 7 days. Highlight themes and open loops in one new note.",
+  "prompt.compact": `You are a summarization assistant. Produce a dense prose summary (200\u2013400 words) of the conversation below, preserving:
+- The user's original intent and questions
+- Key decisions made and their rationale
+- File paths created, edited, or referenced
+- Outstanding tasks and open questions
+- Important information discovered
+
+Be concise but complete. Do not omit critical details. Write in third person (e.g., "The user asked...", "The assistant found...").`
 };
 
 // src/locales/zh-CN.json
@@ -88,6 +101,7 @@ var zh_CN_default = {
   "chat.new": "\u65B0\u5BF9\u8BDD",
   "chat.mode.ask": "\u63D0\u95EE",
   "chat.mode.edit": "\u7F16\u8F91",
+  "chat.compacting": "\u6B63\u5728\u538B\u7F29\u5BF9\u8BDD...",
   "diff.approve": "\u6279\u51C6",
   "diff.reject": "\u62D2\u7EDD",
   "diff.applyAll": "\u5168\u90E8\u5E94\u7528",
@@ -101,7 +115,8 @@ var zh_CN_default = {
   "prompt.system.ask": "\u4F60\u662F\u4E00\u4F4D\u77E5\u8BC6\u5E93\u52A9\u624B\u3002\u4F7F\u7528\u5DE5\u5177\u641C\u7D22\u548C\u9605\u8BFB\u7B14\u8BB0\uFF0C\u5E76\u5728\u76F8\u5173\u5904\u5F15\u7528\u7B14\u8BB0\u8DEF\u5F84\u3002",
   "prompt.system.edit": "\u4F60\u662F\u4E00\u4F4D\u5177\u5907\u7F16\u8F91\u80FD\u529B\u7684\u77E5\u8BC6\u5E93\u52A9\u624B\u3002\u6240\u6709\u5199\u5165\u90FD\u9700\u8981\u7528\u6237\u6279\u51C6\uFF0C\u8BF7\u751F\u6210\u6700\u5C0F\u5FC5\u8981\u7684\u6539\u52A8\u3002",
   "prompt.scheduled.daily": "\u603B\u7ED3\u4ECA\u5929\u4FEE\u6539\u8FC7\u7684\u7B14\u8BB0\uFF0C\u751F\u6210\u4E00\u7BC7\u65B0\u7B14\u8BB0\uFF0C\u6309\u4E3B\u9898\u5206\u5C0F\u8282\u5E76\u94FE\u63A5\u56DE\u6E90\u7B14\u8BB0\u3002",
-  "prompt.scheduled.weekly": "\u56DE\u987E\u6700\u8FD1 7 \u5929\u7684\u7B14\u8BB0\uFF0C\u63D0\u70BC\u4E3B\u9898\u4E0E\u672A\u5B8C\u6210\u4E8B\u9879\uFF0C\u751F\u6210\u4E00\u7BC7\u65B0\u7684\u5468\u56DE\u987E\u7B14\u8BB0\u3002"
+  "prompt.scheduled.weekly": "\u56DE\u987E\u6700\u8FD1 7 \u5929\u7684\u7B14\u8BB0\uFF0C\u63D0\u70BC\u4E3B\u9898\u4E0E\u672A\u5B8C\u6210\u4E8B\u9879\uFF0C\u751F\u6210\u4E00\u7BC7\u65B0\u7684\u5468\u56DE\u987E\u7B14\u8BB0\u3002",
+  "prompt.compact": "\u4F60\u662F\u4E00\u4E2A\u5BF9\u8BDD\u6458\u8981\u52A9\u624B\u3002\u8BF7\u5BF9\u4EE5\u4E0B\u5BF9\u8BDD\u8FDB\u884C\u7B80\u6D01\u4F46\u5B8C\u6574\u7684\u6563\u6587\u6458\u8981\uFF08200-400\u5B57\uFF09\uFF0C\u4FDD\u7559\u4EE5\u4E0B\u8981\u7D20\uFF1A\n- \u7528\u6237\u7684\u539F\u59CB\u610F\u56FE\u548C\u95EE\u9898\n- \u6240\u4F5C\u7684\u5173\u952E\u51B3\u7B56\u53CA\u5176\u7406\u7531\n- \u6D89\u53CA\u7684\u6587\u4EF6\u8DEF\u5F84\uFF08\u521B\u5EFA\u3001\u7F16\u8F91\u6216\u5F15\u7528\uFF09\n- \u672A\u5B8C\u6210\u7684\u4EFB\u52A1\u548C\u5F85\u89E3\u51B3\u7684\u95EE\u9898\n- \u53D1\u73B0\u7684\u91CD\u8981\u4FE1\u606F\n\n\u8BF7\u7528\u7B2C\u4E09\u4EBA\u79F0\u4E66\u5199\uFF08\u4F8B\u5982\uFF1A\u7528\u6237\u8BE2\u95EE\u4E86\u2026\u2026\u3001\u52A9\u624B\u53D1\u73B0\u2026\u2026\uFF09\u3002"
 };
 
 // src/services/i18n.ts
@@ -245,19 +260,32 @@ var Conversation = class {
   }
 };
 var SEP = "\n\n<!-- msg -->\n\n";
+var SUMMARY_OPEN = "<!-- summary -->";
+var SUMMARY_CLOSE = "<!-- /summary -->";
 function serializeConversation(c) {
-  const fm = [
+  const fmParts = [
     "---",
     `id: ${c.id}`,
     `title: ${JSON.stringify(c.title ?? "")}`,
     `createdAt: ${c.createdAt}`,
     `mode: ${c.mode}`,
     `provider: ${c.provider}`,
-    `model: ${c.model}`,
-    "---",
-    ""
-  ].join("\n");
-  const body = c.messages.map((m) => {
+    `model: ${c.model}`
+  ];
+  if (c.summarizedThroughIndex !== void 0) {
+    fmParts.push(`summarizedThroughIndex: ${c.summarizedThroughIndex}`);
+  }
+  fmParts.push("---", "");
+  const fm = fmParts.join("\n");
+  let body = "";
+  if (c.summary) {
+    body += `${SUMMARY_OPEN}
+${c.summary}
+${SUMMARY_CLOSE}
+
+`;
+  }
+  body += c.messages.map((m) => {
     const meta = JSON.stringify({ role: m.role, toolCalls: m.toolCalls, toolCallId: m.toolCallId });
     return `<!-- meta: ${meta} -->
 ${m.content}`;
@@ -275,15 +303,25 @@ function parseConversation(md) {
       continue;
     fm[kv[1]] = kv[2].startsWith('"') ? JSON.parse(kv[2]) : kv[2];
   }
+  let bodyText = m[2] ?? "";
+  let summary;
+  const summaryRe = new RegExp(
+    `^${SUMMARY_OPEN}\\n([\\s\\S]*?)\\n${SUMMARY_CLOSE}\\n\\n?`
+  );
+  const summaryMatch = bodyText.match(summaryRe);
+  if (summaryMatch) {
+    summary = summaryMatch[1];
+    bodyText = bodyText.slice(summaryMatch[0].length);
+  }
   const messages = [];
-  for (const block of (m[2] ?? "").split(SEP).filter((x) => x.trim())) {
+  for (const block of bodyText.split(SEP).filter((x) => x.trim())) {
     const meta = block.match(/^<!-- meta: (.+?) -->\n([\s\S]*)$/);
     if (!meta)
       continue;
     const parsed = JSON.parse(meta[1]);
     messages.push({ role: parsed.role, content: meta[2], toolCalls: parsed.toolCalls, toolCallId: parsed.toolCallId });
   }
-  return new Conversation({
+  const conv = new Conversation({
     id: fm.id,
     title: fm.title || void 0,
     createdAt: Number(fm.createdAt),
@@ -291,6 +329,12 @@ function parseConversation(md) {
     provider: fm.provider,
     model: fm.model
   }, messages);
+  if (summary !== void 0)
+    conv.summary = summary;
+  if (fm.summarizedThroughIndex !== void 0) {
+    conv.summarizedThroughIndex = Number(fm.summarizedThroughIndex);
+  }
+  return conv;
 }
 
 // src/services/conversation-store.ts
@@ -562,6 +606,30 @@ var OpenAIProvider = class {
   }
 };
 
+// src/providers/model-caps.ts
+var TABLE = [
+  { provider: "anthropic", match: /claude.*(sonnet|opus|haiku).*4/i, caps: { contextWindow: 2e5, supportsPromptCache: true } },
+  { provider: "anthropic", match: /claude/i, caps: { contextWindow: 2e5, supportsPromptCache: true } },
+  { provider: "openai", match: /gpt-4\.1|gpt-4o/i, caps: { contextWindow: 128e3, supportsPromptCache: false } },
+  { provider: "openai", match: /o1|o3/i, caps: { contextWindow: 2e5, supportsPromptCache: false } },
+  { provider: "deepseek", match: /./, caps: { contextWindow: 64e3, supportsPromptCache: false } },
+  { provider: "qwen", match: /./, caps: { contextWindow: 128e3, supportsPromptCache: false } },
+  { provider: "kimi", match: /./, caps: { contextWindow: 128e3, supportsPromptCache: false } },
+  { provider: "zhipu", match: /./, caps: { contextWindow: 128e3, supportsPromptCache: false } },
+  { provider: "minimax", match: /./, caps: { contextWindow: 245e3, supportsPromptCache: false } },
+  { provider: "openrouter", match: /./, caps: { contextWindow: 128e3, supportsPromptCache: false } },
+  { provider: "ollama", match: /./, caps: { contextWindow: 32e3, supportsPromptCache: false } }
+];
+var DEFAULT = { contextWindow: 32e3, supportsPromptCache: false };
+function lookupModelCaps(provider, model) {
+  for (const entry of TABLE) {
+    if (entry.provider === provider && entry.match.test(model)) {
+      return entry.caps;
+    }
+  }
+  return DEFAULT;
+}
+
 // src/providers/anthropic.ts
 var AnthropicProvider = class {
   constructor(cfg, sseFn = httpSSE) {
@@ -571,13 +639,16 @@ var AnthropicProvider = class {
   }
   async *chat(req) {
     const url = (this.cfg.baseUrl || "https://api.anthropic.com") + "/v1/messages";
-    const system = req.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const caps = lookupModelCaps("anthropic", req.model);
+    const useCache = caps.supportsPromptCache;
+    const sysText = req.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+    const system = useCache && sysText ? [{ type: "text", text: sysText, cache_control: { type: "ephemeral" } }] : sysText || void 0;
     const msgs = req.messages.filter((m) => m.role !== "system").map((m) => this.toAnthropic(m));
     const body = {
       model: req.model,
       max_tokens: 4096,
       stream: true,
-      system: system || void 0,
+      system,
       messages: msgs,
       tools: req.tools.length ? req.tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })) : void 0,
       temperature: req.temperature
@@ -588,7 +659,8 @@ var AnthropicProvider = class {
       headers: {
         "content-type": "application/json",
         "x-api-key": this.cfg.apiKey,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
+        ...useCache ? { "anthropic-beta": "prompt-caching-2024-07-31" } : {}
       },
       body: JSON.stringify(body),
       signal: req.signal
@@ -996,69 +1068,6 @@ var ApprovalQueue = class {
   }
 };
 
-// src/agent/history-trimmer.ts
-function approxTokens(s) {
-  return Math.ceil(s.length / 4);
-}
-function msgTokens(m) {
-  let n = approxTokens(m.content ?? "") + 4;
-  if (m.toolCalls?.length) {
-    for (const tc of m.toolCalls)
-      n += approxTokens(tc.name) + approxTokens(JSON.stringify(tc.args)) + 8;
-  }
-  return n;
-}
-function totalTokens(msgs) {
-  let n = 0;
-  for (const m of msgs)
-    n += msgTokens(m);
-  return n;
-}
-function groupRest(rest) {
-  const groups = [];
-  let i = 0;
-  while (i < rest.length) {
-    const m = rest[i];
-    if (m.role === "assistant" && m.toolCalls?.length) {
-      const msgs = [m];
-      let j = i + 1;
-      while (j < rest.length && rest[j].role === "tool") {
-        msgs.push(rest[j]);
-        j++;
-      }
-      groups.push({ msgs, tokens: msgs.reduce((a, x) => a + msgTokens(x), 0) });
-      i = j;
-    } else {
-      groups.push({ msgs: [m], tokens: msgTokens(m) });
-      i++;
-    }
-  }
-  return groups;
-}
-function trimHistory(messages, budget) {
-  if (totalTokens(messages) <= budget)
-    return messages;
-  const system = messages.filter((m) => m.role === "system");
-  const rest = messages.filter((m) => m.role !== "system");
-  const groups = groupRest(rest);
-  const keep = [];
-  let used = totalTokens(system);
-  for (let i = groups.length - 1; i >= 0; i--) {
-    if (used + groups[i].tokens > budget)
-      break;
-    keep.unshift(groups[i]);
-    used += groups[i].tokens;
-  }
-  const keptMsgs = keep.flatMap((g) => g.msgs);
-  const droppedGroups = groups.length - keep.length;
-  const out = [...system];
-  if (droppedGroups > 0) {
-    out.push({ role: "system", content: `[Earlier ${droppedGroups} message group(s) summarized for brevity.]` });
-  }
-  out.push(...keptMsgs);
-  return out;
-}
-
 // src/agent/agent-loop.ts
 var AgentLoop = class {
   constructor(opts) {
@@ -1074,17 +1083,16 @@ var AgentLoop = class {
     yield* this.run();
   }
   async *run() {
-    const { provider, conversation, tools, approvalQueue, systemPrompt, maxIterations, historyBudget, turnTimeoutMs } = this.opts;
+    const { provider, conversation, tools, approvalQueue, maxIterations, turnTimeoutMs } = this.opts;
     for (let i = 0; i < maxIterations; i++) {
       if (this.abort.signal.aborted) {
         yield { type: "stopped", reason: "cancelled" };
         return;
       }
-      const withSys = [{ role: "system", content: systemPrompt }, ...conversation.messages];
-      const trimmed = trimHistory(withSys, historyBudget);
+      const { messages: preparedMsgs, cacheableBoundary } = await this.opts.prepareContext();
+      console.debug(`[agent] iteration ${i}, history: ${preparedMsgs.length} msgs, cacheableBoundary: ${cacheableBoundary}`);
       const assistantMsg = { role: "assistant", content: "", toolCalls: [] };
       let stoppedEarly = false;
-      console.debug(`[agent] iteration ${i}, history: ${trimmed.length} msgs`);
       const iterAbort = new AbortController();
       const propagate = () => iterAbort.abort();
       this.abort.signal.addEventListener("abort", propagate, { once: true });
@@ -1095,8 +1103,9 @@ var AgentLoop = class {
       try {
         for await (const d of provider.chat({
           model: conversation.model,
-          messages: trimmed,
+          messages: preparedMsgs,
           tools: tools.map((t) => t.schema),
+          cacheableBoundary,
           signal: iterAbort.signal
         })) {
           if (d.type === "text" && d.text) {
@@ -1165,6 +1174,205 @@ var AgentLoop = class {
     yield { type: "stopped", reason: "max_iterations" };
   }
 };
+
+// src/agent/history-trimmer.ts
+function approxTokens(s) {
+  return Math.ceil(s.length / 4);
+}
+function msgTokens(m) {
+  let n = approxTokens(m.content ?? "") + 4;
+  if (m.toolCalls?.length) {
+    for (const tc of m.toolCalls)
+      n += approxTokens(tc.name) + approxTokens(JSON.stringify(tc.args)) + 8;
+  }
+  return n;
+}
+function totalTokens(msgs) {
+  let n = 0;
+  for (const m of msgs)
+    n += msgTokens(m);
+  return n;
+}
+function groupRest(rest) {
+  const groups = [];
+  let i = 0;
+  while (i < rest.length) {
+    const m = rest[i];
+    if (m.role === "assistant" && m.toolCalls?.length) {
+      const msgs = [m];
+      let j = i + 1;
+      while (j < rest.length && rest[j].role === "tool") {
+        msgs.push(rest[j]);
+        j++;
+      }
+      groups.push({ msgs, tokens: msgs.reduce((a, x) => a + msgTokens(x), 0) });
+      i = j;
+    } else {
+      groups.push({ msgs: [m], tokens: msgTokens(m) });
+      i++;
+    }
+  }
+  return groups;
+}
+function trimHistory(messages, budget) {
+  if (totalTokens(messages) <= budget)
+    return messages;
+  const system = messages.filter((m) => m.role === "system");
+  const rest = messages.filter((m) => m.role !== "system");
+  const groups = groupRest(rest);
+  const keep = [];
+  let used = totalTokens(system);
+  for (let i = groups.length - 1; i >= 0; i--) {
+    if (used + groups[i].tokens > budget)
+      break;
+    keep.unshift(groups[i]);
+    used += groups[i].tokens;
+  }
+  const keptMsgs = keep.flatMap((g) => g.msgs);
+  const droppedGroups = groups.length - keep.length;
+  const out = [...system];
+  if (droppedGroups > 0) {
+    out.push({ role: "system", content: `[Earlier ${droppedGroups} message group(s) summarized for brevity.]` });
+  }
+  out.push(...keptMsgs);
+  return out;
+}
+
+// src/agent/context-manager.ts
+var ContextManager = class {
+  constructor(opts) {
+    this.opts = opts;
+    this.caps = lookupModelCaps(opts.providerId, opts.model);
+  }
+  /** Effective history budget in approx-tokens (same unit as totalTokens()). */
+  effectiveBudget() {
+    const modelBudget = this.caps.contextWindow - this.opts.settings.responseReserveTokens;
+    const cap = this.opts.settings.historyTokenBudget;
+    return cap > 0 ? Math.min(cap, modelBudget) : modelBudget;
+  }
+  /**
+   * Called at the start of each AgentLoop iteration.
+   * May run compaction (blocking ~2–5s) if usage is above threshold.
+   */
+  async prepare() {
+    const budget = this.effectiveBudget();
+    const { conversation, systemPrompt, settings } = this.opts;
+    const candidate = this.buildCandidate(systemPrompt, conversation);
+    const used = totalTokens(candidate);
+    if (used <= settings.autoCompactThreshold * budget) {
+      return {
+        messages: candidate,
+        cacheableBoundary: conversation.summary !== void 0 ? 1 : 0,
+        effectiveBudget: budget
+      };
+    }
+    this.opts.onStatus?.("compacting");
+    try {
+      await this.compactNow();
+      await this.opts.onCompacted?.();
+    } finally {
+      this.opts.onStatus?.("idle");
+    }
+    const newCandidate = this.buildCandidate(systemPrompt, conversation);
+    const newUsed = totalTokens(newCandidate);
+    if (newUsed > budget) {
+      const trimmed = trimHistory(newCandidate, budget);
+      return {
+        messages: trimmed,
+        cacheableBoundary: conversation.summary !== void 0 ? 1 : 0,
+        effectiveBudget: budget
+      };
+    }
+    return {
+      messages: newCandidate,
+      cacheableBoundary: conversation.summary !== void 0 ? 1 : 0,
+      effectiveBudget: budget
+    };
+  }
+  /**
+   * Runs a summarization pass over older turns.
+   * Mutates conversation.summary and conversation.summarizedThroughIndex.
+   */
+  async compactNow() {
+    const { conversation, provider, model, settings, i18n, signal } = this.opts;
+    const tailStart = (conversation.summarizedThroughIndex ?? -1) + 1;
+    const unsummarized = conversation.messages.slice(tailStart);
+    const turnGroups = groupByTurns(unsummarized);
+    const keepCount = Math.min(settings.keepLastTurns, turnGroups.length);
+    const toSummarizeGroups = turnGroups.slice(0, turnGroups.length - keepCount);
+    if (toSummarizeGroups.length === 0)
+      return;
+    const toSummarize = toSummarizeGroups.flatMap((g) => g);
+    const newSummarizedThroughIndex = tailStart + toSummarize.length - 1;
+    const systemPromptText = i18n.t("prompt.compact");
+    const userContent = serializeMessagesForSummary(toSummarize, conversation.summary);
+    let summary = "";
+    for await (const delta of provider.chat({
+      model,
+      messages: [
+        { role: "system", content: systemPromptText },
+        { role: "user", content: userContent }
+      ],
+      tools: [],
+      temperature: 0.2,
+      signal
+    })) {
+      if (delta.type === "text" && delta.text)
+        summary += delta.text;
+      if (delta.type === "done")
+        break;
+    }
+    if (!summary.trim())
+      return;
+    conversation.summary = summary;
+    conversation.summarizedThroughIndex = newSummarizedThroughIndex;
+  }
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  buildCandidate(systemPrompt, conversation) {
+    const sysMsg = { role: "system", content: systemPrompt };
+    const summaryMsg = conversation.summary ? { role: "system", content: conversation.summary } : null;
+    const tailStart = (conversation.summarizedThroughIndex ?? -1) + 1;
+    const tailMsgs = conversation.messages.slice(tailStart);
+    return [sysMsg, ...summaryMsg ? [summaryMsg] : [], ...tailMsgs];
+  }
+};
+function groupByTurns(messages) {
+  const groups = [];
+  let current = [];
+  for (const m of messages) {
+    if (m.role === "user" && current.length > 0) {
+      groups.push(current);
+      current = [];
+    }
+    current.push(m);
+  }
+  if (current.length > 0)
+    groups.push(current);
+  return groups;
+}
+function serializeMessagesForSummary(msgs, priorSummary) {
+  const parts = [];
+  if (priorSummary) {
+    parts.push(`Prior summary:
+${priorSummary}
+
+---
+New conversation to integrate:`);
+  }
+  for (const m of msgs) {
+    if (m.role === "assistant" && m.toolCalls?.length) {
+      const tcStr = m.toolCalls.map((tc) => `[tool ${tc.name}(${JSON.stringify(tc.args).slice(0, 100)})]`).join(" ");
+      parts.push(`Assistant: ${m.content ? m.content + " " : ""}${tcStr}`);
+    } else if (m.role === "tool") {
+      const preview = (m.content ?? "").length > 500 ? m.content.slice(0, 500) + "\u2026" : m.content;
+      parts.push(`Tool result (${m.toolCallId ?? "?"}): ${preview}`);
+    } else {
+      const roleLabel = m.role === "user" ? "User" : m.role === "assistant" ? "Assistant" : m.role === "system" ? "System" : m.role;
+      parts.push(`${roleLabel}: ${m.content}`);
+    }
+  }
+  return parts.join("\n\n");
+}
 
 // src/agent/mode-gate.ts
 function systemPromptKey(mode) {
@@ -3082,47 +3290,47 @@ function markdown(node, params) {
 var { Map: Map_1 } = globals;
 function get_each_context2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[13] = list[i];
+  child_ctx[14] = list[i];
   return child_ctx;
 }
 function get_each_context_1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[16] = list[i];
+  child_ctx[17] = list[i];
   const constants_0 = (
     /*pending*/
     child_ctx[2].find(function func_1(...args) {
       return (
         /*func_1*/
-        ctx[8](
+        ctx[9](
           /*tc*/
-          child_ctx[16],
+          child_ctx[17],
           ...args
         )
       );
     })
   );
-  child_ctx[17] = constants_0;
+  child_ctx[18] = constants_0;
   return child_ctx;
 }
 function get_if_ctx(ctx) {
   const child_ctx = ctx.slice();
   const constants_0 = (
     /*toolCallMap*/
-    child_ctx[6].get(
+    child_ctx[7].get(
       /*m*/
-      child_ctx[13].toolCallId ?? ""
+      child_ctx[14].toolCallId ?? ""
     )
   );
-  child_ctx[16] = constants_0;
+  child_ctx[17] = constants_0;
   return child_ctx;
 }
-function create_if_block_9(ctx) {
+function create_if_block_10(ctx) {
   let div1;
   return {
     c() {
       div1 = element("div");
-      div1.innerHTML = `<div class="ml-empty-icon svelte-15mw9ke" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-15mw9ke">Start a conversation</p> <p class="ml-empty-hint svelte-15mw9ke">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
-      attr(div1, "class", "ml-empty svelte-15mw9ke");
+      div1.innerHTML = `<div class="ml-empty-icon svelte-icv7py" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div> <p class="ml-empty-title svelte-icv7py">Start a conversation</p> <p class="ml-empty-hint svelte-icv7py">Ask questions about your vault or switch to Edit mode to create and modify notes.</p>`;
+      attr(div1, "class", "ml-empty svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div1, anchor);
@@ -3134,7 +3342,7 @@ function create_if_block_9(ctx) {
     }
   };
 }
-function create_if_block_7(ctx) {
+function create_if_block_8(ctx) {
   let div;
   let svg;
   let circle;
@@ -3143,15 +3351,15 @@ function create_if_block_7(ctx) {
   let span0;
   let t1_value = (
     /*tc*/
-    (ctx[16]?.name ?? "tool") + ""
+    (ctx[17]?.name ?? "tool") + ""
   );
   let t1;
   let t2;
   let show_if = (
     /*tc*/
-    ctx[16]?.args && firstArgHint(
+    ctx[17]?.args && firstArgHint(
       /*tc*/
-      ctx[16].args
+      ctx[17].args
     )
   );
   let t3;
@@ -3160,11 +3368,11 @@ function create_if_block_7(ctx) {
   let span2;
   let t6_value = previewResult(
     /*m*/
-    ctx[13].content
+    ctx[14].content
   ) + "";
   let t6;
   let div_title_value;
-  let if_block = show_if && create_if_block_8(ctx);
+  let if_block = show_if && create_if_block_9(ctx);
   return {
     c() {
       div = element("div");
@@ -3199,12 +3407,12 @@ function create_if_block_7(ctx) {
       attr(svg, "stroke-linecap", "round");
       attr(svg, "stroke-linejoin", "round");
       attr(svg, "aria-hidden", "true");
-      attr(span0, "class", "ml-tool-name svelte-15mw9ke");
-      attr(span1, "class", "ml-tool-sep svelte-15mw9ke");
-      attr(span2, "class", "ml-tool-preview svelte-15mw9ke");
-      attr(div, "class", "ml-tool-result svelte-15mw9ke");
+      attr(span0, "class", "ml-tool-name svelte-icv7py");
+      attr(span1, "class", "ml-tool-sep svelte-icv7py");
+      attr(span2, "class", "ml-tool-preview svelte-icv7py");
+      attr(div, "class", "ml-tool-result svelte-icv7py");
       attr(div, "title", div_title_value = /*m*/
-      ctx[13].content);
+      ctx[14].content);
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3225,21 +3433,21 @@ function create_if_block_7(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty & /*toolCallMap, messages*/
-      65 && t1_value !== (t1_value = /*tc*/
-      (ctx2[16]?.name ?? "tool") + ""))
+      129 && t1_value !== (t1_value = /*tc*/
+      (ctx2[17]?.name ?? "tool") + ""))
         set_data(t1, t1_value);
       if (dirty & /*toolCallMap, messages*/
-      65)
+      129)
         show_if = /*tc*/
-        ctx2[16]?.args && firstArgHint(
+        ctx2[17]?.args && firstArgHint(
           /*tc*/
-          ctx2[16].args
+          ctx2[17].args
         );
       if (show_if) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block_8(ctx2);
+          if_block = create_if_block_9(ctx2);
           if_block.c();
           if_block.m(div, t3);
         }
@@ -3250,12 +3458,12 @@ function create_if_block_7(ctx) {
       if (dirty & /*messages*/
       1 && t6_value !== (t6_value = previewResult(
         /*m*/
-        ctx2[13].content
+        ctx2[14].content
       ) + ""))
         set_data(t6, t6_value);
       if (dirty & /*messages*/
       1 && div_title_value !== (div_title_value = /*m*/
-      ctx2[13].content)) {
+      ctx2[14].content)) {
         attr(div, "title", div_title_value);
       }
     },
@@ -3270,7 +3478,7 @@ function create_if_block_7(ctx) {
     }
   };
 }
-function create_if_block_4(ctx) {
+function create_if_block_5(ctx) {
   let div1;
   let div0;
   let t1;
@@ -3287,21 +3495,21 @@ function create_if_block_4(ctx) {
     if (show_if == null)
       show_if = !!isError(
         /*m*/
-        ctx2[13].content
+        ctx2[14].content
       );
     if (show_if)
-      return create_if_block_6;
+      return create_if_block_7;
     return create_else_block2;
   }
   let current_block_type = select_block_type_1(ctx, -1);
   let if_block = current_block_type(ctx);
   let each_value_1 = ensure_array_like(
     /*m*/
-    ctx[13].toolCalls ?? []
+    ctx[14].toolCalls ?? []
   );
   const get_key = (ctx2) => (
     /*tc*/
-    ctx2[16].id
+    ctx2[17].id
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
     let child_ctx = get_each_context_1(ctx, each_value_1, i);
@@ -3320,11 +3528,11 @@ function create_if_block_4(ctx) {
         each_blocks[i].c();
       }
       each_1_anchor = empty();
-      attr(div0, "class", "ml-name ml-name-agent svelte-15mw9ke");
-      attr(div1, "class", "ml-turn ml-turn-agent svelte-15mw9ke");
+      attr(div0, "class", "ml-name ml-name-agent svelte-icv7py");
+      attr(div1, "class", "ml-turn ml-turn-agent svelte-icv7py");
       toggle_class(div1, "ml-error", isError(
         /*m*/
-        ctx[13].content
+        ctx[14].content
       ));
     },
     m(target, anchor) {
@@ -3356,14 +3564,14 @@ function create_if_block_4(ctx) {
       1) {
         toggle_class(div1, "ml-error", isError(
           /*m*/
-          ctx2[13].content
+          ctx2[14].content
         ));
       }
       if (dirty & /*pending, messages, plugin*/
       13) {
         each_value_1 = ensure_array_like(
           /*m*/
-          ctx2[13].toolCalls ?? []
+          ctx2[14].toolCalls ?? []
         );
         group_outros();
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block_1, each_1_anchor, get_each_context_1);
@@ -3397,14 +3605,14 @@ function create_if_block_4(ctx) {
     }
   };
 }
-function create_if_block_32(ctx) {
+function create_if_block_4(ctx) {
   let div2;
   let div0;
   let t1;
   let div1;
   let t2_value = (
     /*m*/
-    ctx[13].content + ""
+    ctx[14].content + ""
   );
   let t2;
   return {
@@ -3415,9 +3623,9 @@ function create_if_block_32(ctx) {
       t1 = space();
       div1 = element("div");
       t2 = text(t2_value);
-      attr(div0, "class", "ml-name ml-name-user svelte-15mw9ke");
-      attr(div1, "class", "ml-content svelte-15mw9ke");
-      attr(div2, "class", "ml-turn ml-turn-user svelte-15mw9ke");
+      attr(div0, "class", "ml-name ml-name-user svelte-icv7py");
+      attr(div1, "class", "ml-content svelte-icv7py");
+      attr(div2, "class", "ml-turn ml-turn-user svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3429,7 +3637,7 @@ function create_if_block_32(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t2_value !== (t2_value = /*m*/
-      ctx2[13].content + ""))
+      ctx2[14].content + ""))
         set_data(t2, t2_value);
     },
     i: noop,
@@ -3441,12 +3649,12 @@ function create_if_block_32(ctx) {
     }
   };
 }
-function create_if_block_8(ctx) {
+function create_if_block_9(ctx) {
   let span;
   let t0;
   let t1_value = firstArgHint(
     /*tc*/
-    ctx[16].args
+    ctx[17].args
   ) + "";
   let t1;
   let t2;
@@ -3456,7 +3664,7 @@ function create_if_block_8(ctx) {
       t0 = text('"');
       t1 = text(t1_value);
       t2 = text('"');
-      attr(span, "class", "ml-tool-arg svelte-15mw9ke");
+      attr(span, "class", "ml-tool-arg svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, span, anchor);
@@ -3466,9 +3674,9 @@ function create_if_block_8(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty & /*toolCallMap, messages*/
-      65 && t1_value !== (t1_value = firstArgHint(
+      129 && t1_value !== (t1_value = firstArgHint(
         /*tc*/
-        ctx2[16].args
+        ctx2[17].args
       ) + ""))
         set_data(t1, t1_value);
     },
@@ -3487,7 +3695,7 @@ function create_else_block2(ctx) {
   return {
     c() {
       div = element("div");
-      attr(div, "class", "ml-content svelte-15mw9ke");
+      attr(div, "class", "ml-content svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3495,7 +3703,7 @@ function create_else_block2(ctx) {
         dispose = action_destroyer(markdown_action = markdown.call(null, div, {
           text: (
             /*m*/
-            ctx[13].content
+            ctx[14].content
           ),
           plugin: (
             /*plugin*/
@@ -3512,7 +3720,7 @@ function create_else_block2(ctx) {
         markdown_action.update.call(null, {
           text: (
             /*m*/
-            ctx[13].content
+            ctx[14].content
           ),
           plugin: (
             /*plugin*/
@@ -3529,18 +3737,18 @@ function create_else_block2(ctx) {
     }
   };
 }
-function create_if_block_6(ctx) {
+function create_if_block_7(ctx) {
   let div;
   let t_value = (
     /*m*/
-    ctx[13].content + ""
+    ctx[14].content + ""
   );
   let t;
   return {
     c() {
       div = element("div");
       t = text(t_value);
-      attr(div, "class", "ml-content ml-content-error svelte-15mw9ke");
+      attr(div, "class", "ml-content ml-content-error svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3549,7 +3757,7 @@ function create_if_block_6(ctx) {
     p(ctx2, dirty) {
       if (dirty & /*messages*/
       1 && t_value !== (t_value = /*m*/
-      ctx2[13].content + ""))
+      ctx2[14].content + ""))
         set_data(t, t_value);
     },
     d(detaching) {
@@ -3559,14 +3767,14 @@ function create_if_block_6(ctx) {
     }
   };
 }
-function create_if_block_5(ctx) {
+function create_if_block_6(ctx) {
   let diffreviewblock;
   let current;
   diffreviewblock = new DiffReviewBlock_default({
     props: {
       p: (
         /*pw*/
-        ctx[17]
+        ctx[18]
       ),
       plugin: (
         /*plugin*/
@@ -3587,7 +3795,7 @@ function create_if_block_5(ctx) {
       if (dirty & /*pending, messages*/
       5)
         diffreviewblock_changes.p = /*pw*/
-        ctx2[17];
+        ctx2[18];
       if (dirty & /*plugin*/
       8)
         diffreviewblock_changes.plugin = /*plugin*/
@@ -3615,7 +3823,7 @@ function create_each_block_1(key_1, ctx) {
   let current;
   let if_block = (
     /*pw*/
-    ctx[17] && create_if_block_5(ctx)
+    ctx[18] && create_if_block_6(ctx)
   );
   return {
     key: key_1,
@@ -3638,7 +3846,7 @@ function create_each_block_1(key_1, ctx) {
       ctx = new_ctx;
       if (
         /*pw*/
-        ctx[17]
+        ctx[18]
       ) {
         if (if_block) {
           if_block.p(ctx, dirty);
@@ -3647,7 +3855,7 @@ function create_each_block_1(key_1, ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block_5(ctx);
+          if_block = create_if_block_6(ctx);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
@@ -3686,22 +3894,22 @@ function create_each_block2(key_1, ctx) {
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block_32, create_if_block_4, create_if_block_7];
+  const if_block_creators = [create_if_block_4, create_if_block_5, create_if_block_8];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
       /*m*/
-      ctx2[13].role === "user"
+      ctx2[14].role === "user"
     )
       return 0;
     if (
       /*m*/
-      ctx2[13].role === "assistant"
+      ctx2[14].role === "assistant"
     )
       return 1;
     if (
       /*m*/
-      ctx2[13].role === "tool"
+      ctx2[14].role === "tool"
     )
       return 2;
     return -1;
@@ -3784,18 +3992,88 @@ function create_each_block2(key_1, ctx) {
     }
   };
 }
-function create_if_block_22(ctx) {
+function create_if_block_32(ctx) {
   let div2;
   return {
     c() {
       div2 = element("div");
-      div2.innerHTML = `<div class="ml-name ml-name-agent svelte-15mw9ke">Agent</div> <div class="ml-thinking svelte-15mw9ke" aria-live="polite" aria-label="Agent is thinking"><span class="ml-dot svelte-15mw9ke"></span><span class="ml-dot svelte-15mw9ke"></span><span class="ml-dot svelte-15mw9ke"></span></div>`;
-      attr(div2, "class", "ml-turn ml-turn-agent ml-thinking-turn svelte-15mw9ke");
+      div2.innerHTML = `<div class="ml-name ml-name-agent svelte-icv7py">Agent</div> <div class="ml-thinking svelte-icv7py" aria-live="polite" aria-label="Agent is thinking"><span class="ml-dot svelte-icv7py"></span><span class="ml-dot svelte-icv7py"></span><span class="ml-dot svelte-icv7py"></span></div>`;
+      attr(div2, "class", "ml-turn ml-turn-agent ml-thinking-turn svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
     },
     p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div2);
+      }
+    }
+  };
+}
+function create_if_block_22(ctx) {
+  let div2;
+  let div0;
+  let t1;
+  let div1;
+  let span0;
+  let span1;
+  let span2;
+  let t2;
+  let span3;
+  let t3_value = (
+    /*plugin*/
+    ctx[3].i18n.t("chat.compacting") + ""
+  );
+  let t3;
+  let div1_aria_label_value;
+  return {
+    c() {
+      div2 = element("div");
+      div0 = element("div");
+      div0.textContent = "Agent";
+      t1 = space();
+      div1 = element("div");
+      span0 = element("span");
+      span1 = element("span");
+      span2 = element("span");
+      t2 = space();
+      span3 = element("span");
+      t3 = text(t3_value);
+      attr(div0, "class", "ml-name ml-name-agent svelte-icv7py");
+      attr(span0, "class", "ml-dot svelte-icv7py");
+      attr(span1, "class", "ml-dot svelte-icv7py");
+      attr(span2, "class", "ml-dot svelte-icv7py");
+      attr(span3, "class", "ml-compacting-label svelte-icv7py");
+      attr(div1, "class", "ml-compacting svelte-icv7py");
+      attr(div1, "aria-live", "polite");
+      attr(div1, "aria-label", div1_aria_label_value = /*plugin*/
+      ctx[3].i18n.t("chat.compacting"));
+      attr(div2, "class", "ml-turn ml-turn-agent ml-thinking-turn svelte-icv7py");
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+      append(div2, div0);
+      append(div2, t1);
+      append(div2, div1);
+      append(div1, span0);
+      append(div1, span1);
+      append(div1, span2);
+      append(div1, t2);
+      append(div1, span3);
+      append(span3, t3);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*plugin*/
+      8 && t3_value !== (t3_value = /*plugin*/
+      ctx2[3].i18n.t("chat.compacting") + ""))
+        set_data(t3, t3_value);
+      if (dirty & /*plugin*/
+      8 && div1_aria_label_value !== (div1_aria_label_value = /*plugin*/
+      ctx2[3].i18n.t("chat.compacting"))) {
+        attr(div1, "aria-label", div1_aria_label_value);
+      }
+    },
     d(detaching) {
       if (detaching) {
         detach(div2);
@@ -3822,11 +4100,11 @@ function create_if_block_13(ctx) {
       div1 = element("div");
       t2 = space();
       span = element("span");
-      attr(div0, "class", "ml-name ml-name-agent svelte-15mw9ke");
-      attr(div1, "class", "ml-content svelte-15mw9ke");
-      attr(span, "class", "ml-cursor svelte-15mw9ke");
+      attr(div0, "class", "ml-name ml-name-agent svelte-icv7py");
+      attr(div1, "class", "ml-content svelte-icv7py");
+      attr(span, "class", "ml-cursor svelte-icv7py");
       attr(span, "aria-hidden", "true");
-      attr(div2, "class", "ml-turn ml-turn-agent svelte-15mw9ke");
+      attr(div2, "class", "ml-turn ml-turn-agent svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -3897,9 +4175,9 @@ function create_if_block3(ctx) {
       t1 = space();
       button1 = element("button");
       t2 = text(t2_value);
-      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-15mw9ke");
-      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-15mw9ke");
-      attr(div, "class", "ml-bulk-actions svelte-15mw9ke");
+      attr(button0, "class", "ml-bulk-btn ml-bulk-approve svelte-icv7py");
+      attr(button1, "class", "ml-bulk-btn ml-bulk-reject svelte-icv7py");
+      attr(div, "class", "ml-bulk-actions svelte-icv7py");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -3914,13 +4192,13 @@ function create_if_block3(ctx) {
             button0,
             "click",
             /*click_handler*/
-            ctx[9]
+            ctx[10]
           ),
           listen(
             button1,
             "click",
             /*click_handler_1*/
-            ctx[10]
+            ctx[11]
           )
         ];
         mounted = true;
@@ -3962,14 +4240,14 @@ function create_fragment3(ctx) {
   let current;
   let mounted;
   let dispose;
-  let if_block0 = show_if && create_if_block_9(ctx);
+  let if_block0 = show_if && create_if_block_10(ctx);
   let each_value = ensure_array_like(
     /*messages*/
     ctx[0]
   );
   const get_key = (ctx2) => (
     /*m*/
-    ctx2[13]
+    ctx2[14]
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context2(ctx, each_value, i);
@@ -3983,10 +4261,15 @@ function create_fragment3(ctx) {
     )
       return create_if_block_13;
     if (
+      /*compacting*/
+      ctx2[5]
+    )
+      return create_if_block_22;
+    if (
       /*busy*/
       ctx2[4]
     )
-      return create_if_block_22;
+      return create_if_block_32;
   }
   let current_block_type = select_block_type_2(ctx, -1);
   let if_block1 = current_block_type && current_block_type(ctx);
@@ -4015,7 +4298,7 @@ function create_fragment3(ctx) {
         if_block2.c();
       t3 = space();
       create_component(changesummary.$$.fragment);
-      attr(div, "class", "ml-root svelte-15mw9ke");
+      attr(div, "class", "ml-root svelte-icv7py");
       attr(div, "role", "log");
       attr(div, "aria-live", "polite");
     },
@@ -4037,14 +4320,14 @@ function create_fragment3(ctx) {
         if_block2.m(div, null);
       append(div, t3);
       mount_component(changesummary, div, null);
-      ctx[11](div);
+      ctx[12](div);
       current = true;
       if (!mounted) {
         dispose = listen(
           div,
           "scroll",
           /*onScroll*/
-          ctx[7]
+          ctx[8]
         );
         mounted = true;
       }
@@ -4058,7 +4341,7 @@ function create_fragment3(ctx) {
       if (show_if) {
         if (if_block0) {
         } else {
-          if_block0 = create_if_block_9(ctx2);
+          if_block0 = create_if_block_10(ctx2);
           if_block0.c();
           if_block0.m(div, t0);
         }
@@ -4067,7 +4350,7 @@ function create_fragment3(ctx) {
         if_block0 = null;
       }
       if (dirty & /*messages, pending, plugin, isError, previewResult, firstArgHint, toolCallMap*/
-      77) {
+      141) {
         each_value = ensure_array_like(
           /*messages*/
           ctx2[0]
@@ -4140,7 +4423,7 @@ function create_fragment3(ctx) {
       if (if_block2)
         if_block2.d();
       destroy_component(changesummary);
-      ctx[11](null);
+      ctx[12](null);
       mounted = false;
       dispose();
     }
@@ -4185,13 +4468,14 @@ function instance3($$self, $$props, $$invalidate) {
   let { pending: pending2 } = $$props;
   let { plugin } = $$props;
   let { busy = false } = $$props;
+  let { compacting = false } = $$props;
   let scrollEl;
   let userScrolledUp = false;
   afterUpdate(() => {
     if (!scrollEl)
       return;
     if (!userScrolledUp)
-      $$invalidate(5, scrollEl.scrollTop = scrollEl.scrollHeight, scrollEl);
+      $$invalidate(6, scrollEl.scrollTop = scrollEl.scrollHeight, scrollEl);
   });
   function onScroll() {
     if (!scrollEl)
@@ -4204,7 +4488,7 @@ function instance3($$self, $$props, $$invalidate) {
   function div_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       scrollEl = $$value;
-      $$invalidate(5, scrollEl);
+      $$invalidate(6, scrollEl);
     });
   }
   $$self.$$set = ($$props2) => {
@@ -4218,12 +4502,14 @@ function instance3($$self, $$props, $$invalidate) {
       $$invalidate(3, plugin = $$props2.plugin);
     if ("busy" in $$props2)
       $$invalidate(4, busy = $$props2.busy);
+    if ("compacting" in $$props2)
+      $$invalidate(5, compacting = $$props2.compacting);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*messages*/
     1) {
       $:
-        $$invalidate(6, toolCallMap = new Map(messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).flatMap((m) => m.toolCalls.map((tc) => [tc.id, tc]))));
+        $$invalidate(7, toolCallMap = new Map(messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).flatMap((m) => m.toolCalls.map((tc) => [tc.id, tc]))));
     }
   };
   return [
@@ -4232,6 +4518,7 @@ function instance3($$self, $$props, $$invalidate) {
     pending2,
     plugin,
     busy,
+    compacting,
     scrollEl,
     toolCallMap,
     onScroll,
@@ -4249,7 +4536,8 @@ var MessageList = class extends SvelteComponent {
       streamBuf: 1,
       pending: 2,
       plugin: 3,
-      busy: 4
+      busy: 4,
+      compacting: 5
     });
   }
 };
@@ -4983,12 +5271,12 @@ function create_if_block_23(ctx) {
   conversationlist.$on(
     "select",
     /*onConversationSelect*/
-    ctx[15]
+    ctx[16]
   );
   conversationlist.$on(
     "newChat",
     /*newChat*/
-    ctx[14]
+    ctx[15]
   );
   return {
     c() {
@@ -5125,9 +5413,9 @@ function create_else_block4(ctx) {
       button.disabled = button_disabled_value = !/*input*/
       ctx[1].trim();
       attr(button, "title", button_title_value = /*t*/
-      ctx[17]("chat.send"));
+      ctx[18]("chat.send"));
       attr(button, "aria-label", button_aria_label_value = /*t*/
-      ctx[17]("chat.send"));
+      ctx[18]("chat.send"));
     },
     m(target, anchor) {
       insert(target, button, anchor);
@@ -5139,7 +5427,7 @@ function create_else_block4(ctx) {
           button,
           "click",
           /*send*/
-          ctx[12]
+          ctx[13]
         );
         mounted = true;
       }
@@ -5185,9 +5473,9 @@ function create_if_block5(ctx) {
       attr(svg, "aria-hidden", "true");
       attr(button, "class", "ac-btn ac-btn-stop svelte-9ylsa4");
       attr(button, "title", button_title_value = /*t*/
-      ctx[17]("chat.cancel"));
+      ctx[18]("chat.cancel"));
       attr(button, "aria-label", button_aria_label_value = /*t*/
-      ctx[17]("chat.cancel"));
+      ctx[18]("chat.cancel"));
     },
     m(target, anchor) {
       insert(target, button, anchor);
@@ -5198,7 +5486,7 @@ function create_if_block5(ctx) {
           button,
           "click",
           /*cancel*/
-          ctx[13]
+          ctx[14]
         );
         mounted = true;
       }
@@ -5256,7 +5544,7 @@ function create_fragment6(ctx) {
   ) } });
   let if_block0 = (
     /*showHistory*/
-    ctx[8] && create_if_block_23(ctx)
+    ctx[9] && create_if_block_23(ctx)
   );
   messagelist = new MessageList_default({
     props: {
@@ -5279,13 +5567,17 @@ function create_fragment6(ctx) {
       busy: (
         /*busy*/
         ctx[3]
+      ),
+      compacting: (
+        /*compacting*/
+        ctx[7]
       )
     }
   });
   function select_block_type(ctx2, dirty) {
     if (
       /*showCharCount*/
-      ctx2[9]
+      ctx2[10]
     )
       return create_if_block_15;
     return create_else_block_1;
@@ -5316,7 +5608,7 @@ function create_fragment6(ctx) {
       t1 = space();
       t2 = text(
         /*providerLabel*/
-        ctx[10]
+        ctx[11]
       );
       t3 = space();
       div0 = element("div");
@@ -5359,13 +5651,13 @@ function create_fragment6(ctx) {
         button0,
         "aria-expanded",
         /*showHistory*/
-        ctx[8]
+        ctx[9]
       );
       toggle_class(
         button0,
         "ac-history-active",
         /*showHistory*/
-        ctx[8]
+        ctx[9]
       );
       attr(span0, "class", "ac-provider-dot svelte-9ylsa4");
       attr(span0, "aria-hidden", "true");
@@ -5390,15 +5682,15 @@ function create_fragment6(ctx) {
       attr(svg1, "aria-hidden", "true");
       attr(button1, "class", "ac-btn ac-btn-ghost svelte-9ylsa4");
       attr(button1, "title", button1_title_value = /*t*/
-      ctx[17]("chat.new"));
+      ctx[18]("chat.new"));
       attr(button1, "aria-label", button1_aria_label_value = /*t*/
-      ctx[17]("chat.new"));
+      ctx[18]("chat.new"));
       attr(div0, "class", "ac-header-right svelte-9ylsa4");
       attr(div1, "class", "ac-header svelte-9ylsa4");
       attr(textarea_1, "placeholder", textarea_1_placeholder_value = /*busy*/
       ctx[3] ? "" : (
         /*t*/
-        ctx[17]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
+        ctx[18]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
       ));
       textarea_1.disabled = /*busy*/
       ctx[3];
@@ -5445,7 +5737,7 @@ function create_fragment6(ctx) {
       append(div6, div5);
       append(div5, div4);
       append(div4, textarea_1);
-      ctx[19](textarea_1);
+      ctx[20](textarea_1);
       set_input_value(
         textarea_1,
         /*input*/
@@ -5464,31 +5756,31 @@ function create_fragment6(ctx) {
             button0,
             "click",
             /*click_handler*/
-            ctx[18]
+            ctx[19]
           ),
           listen(
             button1,
             "click",
             /*newChat*/
-            ctx[14]
+            ctx[15]
           ),
           listen(
             textarea_1,
             "input",
             /*textarea_1_input_handler*/
-            ctx[20]
+            ctx[21]
           ),
           listen(
             textarea_1,
             "input",
             /*autoResize*/
-            ctx[11]
+            ctx[12]
           ),
           listen(
             textarea_1,
             "keydown",
             /*onKeydown*/
-            ctx[16]
+            ctx[17]
           )
         ];
         mounted = true;
@@ -5496,29 +5788,29 @@ function create_fragment6(ctx) {
     },
     p(ctx2, [dirty]) {
       if (!current || dirty & /*showHistory*/
-      256) {
+      512) {
         attr(
           button0,
           "aria-expanded",
           /*showHistory*/
-          ctx2[8]
+          ctx2[9]
         );
       }
       if (!current || dirty & /*showHistory*/
-      256) {
+      512) {
         toggle_class(
           button0,
           "ac-history-active",
           /*showHistory*/
-          ctx2[8]
+          ctx2[9]
         );
       }
       if (!current || dirty & /*providerLabel*/
-      1024)
+      2048)
         set_data(
           t2,
           /*providerLabel*/
-          ctx2[10]
+          ctx2[11]
         );
       const modetoggle_changes = {};
       if (dirty & /*plugin*/
@@ -5528,12 +5820,12 @@ function create_fragment6(ctx) {
       modetoggle.$set(modetoggle_changes);
       if (
         /*showHistory*/
-        ctx2[8]
+        ctx2[9]
       ) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
           if (dirty & /*showHistory*/
-          256) {
+          512) {
             transition_in(if_block0, 1);
           }
         } else {
@@ -5570,12 +5862,16 @@ function create_fragment6(ctx) {
       8)
         messagelist_changes.busy = /*busy*/
         ctx2[3];
+      if (dirty & /*compacting*/
+      128)
+        messagelist_changes.compacting = /*compacting*/
+        ctx2[7];
       messagelist.$set(messagelist_changes);
       if (!current || dirty & /*busy*/
       8 && textarea_1_placeholder_value !== (textarea_1_placeholder_value = /*busy*/
       ctx2[3] ? "" : (
         /*t*/
-        ctx2[17]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
+        ctx2[18]("chat.placeholder") || "Ask anything\u2026 (Shift+Enter for newline)"
       ))) {
         attr(textarea_1, "placeholder", textarea_1_placeholder_value);
       }
@@ -5644,7 +5940,7 @@ function create_fragment6(ctx) {
       if (if_block0)
         if_block0.d();
       destroy_component(messagelist);
-      ctx[19](null);
+      ctx[20](null);
       if_block1.d();
       if_block2.d();
       mounted = false;
@@ -5662,17 +5958,22 @@ function instance6($$self, $$props, $$invalidate) {
   let pending2 = plugin.approvalQueue.list();
   let messages = plugin.currentConversation.messages.slice();
   let streamBuf = "";
+  let compacting = plugin.compacting;
   let textarea;
   let showHistory = false;
   const unsub = plugin.approvalQueue.onChange((list) => {
     $$invalidate(4, pending2 = list);
   });
+  const unsubCompacting = plugin.onCompactingChange((v) => {
+    $$invalidate(7, compacting = v);
+  });
   onDestroy(unsub);
+  onDestroy(unsubCompacting);
   function autoResize() {
     if (!textarea)
       return;
-    $$invalidate(7, textarea.style.height = "auto", textarea);
-    $$invalidate(7, textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px", textarea);
+    $$invalidate(8, textarea.style.height = "auto", textarea);
+    $$invalidate(8, textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px", textarea);
   }
   async function send() {
     if (!input.trim() || busy)
@@ -5714,11 +6015,11 @@ function instance6($$self, $$props, $$invalidate) {
   async function newChat() {
     await plugin.startNewConversation();
     $$invalidate(5, messages = plugin.currentConversation.messages.slice());
-    $$invalidate(8, showHistory = false);
+    $$invalidate(9, showHistory = false);
   }
   async function onConversationSelect() {
     $$invalidate(5, messages = plugin.currentConversation.messages.slice());
-    $$invalidate(8, showHistory = false);
+    $$invalidate(9, showHistory = false);
   }
   function onKeydown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -5727,11 +6028,11 @@ function instance6($$self, $$props, $$invalidate) {
     }
   }
   const t = (k, v) => plugin.i18n.t(k, v);
-  const click_handler = () => $$invalidate(8, showHistory = !showHistory);
+  const click_handler = () => $$invalidate(9, showHistory = !showHistory);
   function textarea_1_binding($$value) {
     binding_callbacks[$$value ? "unshift" : "push"](() => {
       textarea = $$value;
-      $$invalidate(7, textarea);
+      $$invalidate(8, textarea);
     });
   }
   function textarea_1_input_handler() {
@@ -5746,7 +6047,7 @@ function instance6($$self, $$props, $$invalidate) {
     if ($$self.$$.dirty & /*plugin*/
     1) {
       $:
-        $$invalidate(10, providerLabel = `${plugin.settings.providerId}/${plugin.settings.model || "\u2013"}`);
+        $$invalidate(11, providerLabel = `${plugin.settings.providerId}/${plugin.settings.model || "\u2013"}`);
     }
     if ($$self.$$.dirty & /*input*/
     2) {
@@ -5756,7 +6057,7 @@ function instance6($$self, $$props, $$invalidate) {
     if ($$self.$$.dirty & /*charCount*/
     4) {
       $:
-        $$invalidate(9, showCharCount = charCount > 500);
+        $$invalidate(10, showCharCount = charCount > 500);
     }
   };
   return [
@@ -5767,6 +6068,7 @@ function instance6($$self, $$props, $$invalidate) {
     pending2,
     messages,
     streamBuf,
+    compacting,
     textarea,
     showHistory,
     showCharCount,
@@ -5827,7 +6129,7 @@ var StatusBar = class {
   }
   render(state) {
     const s = this.plugin.settings;
-    const label2 = state === "idle" ? "\u25CF" : state === "thinking" ? "\u2026" : "?";
+    const label2 = state === "idle" ? "\u25CF" : state === "thinking" ? "\u2026" : state === "compacting" ? "\u27F3" : "?";
     this.el.setText(`${label2} ${s.providerId}:${s.model || "-"}`);
   }
 };
@@ -5874,7 +6176,10 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
   constructor() {
     super(...arguments);
     this.lastTurnSummary = { created: [], edited: [], deleted: [] };
+    /** True while a compaction pass is running — read by MessageList.svelte. */
+    this.compacting = false;
     this.summaryListeners = /* @__PURE__ */ new Set();
+    this.compactingListeners = /* @__PURE__ */ new Set();
     this.currentLoop = null;
   }
   async onload() {
@@ -5927,6 +6232,15 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     for (const l of this.summaryListeners)
       l(this.lastTurnSummary);
   }
+  onCompactingChange(fn) {
+    this.compactingListeners.add(fn);
+    return () => this.compactingListeners.delete(fn);
+  }
+  setCompacting(v) {
+    this.compacting = v;
+    for (const l of this.compactingListeners)
+      l(v);
+  }
   async *sendMessage(text2) {
     const provider = createProvider(this.settings.providerId, { apiKey: this.settings.apiKey, baseUrl: this.settings.baseUrl });
     this.currentConversation.model = this.settings.model;
@@ -5946,15 +6260,40 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
     };
     const tools = buildToolRegistry(ctx, this.currentConversation.mode);
     this.lastTurnSummary = { created: [], edited: [], deleted: [] };
+    const ctxMgr = new ContextManager({
+      conversation: this.currentConversation,
+      systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
+      provider,
+      model: this.settings.model,
+      providerId: this.settings.providerId,
+      settings: {
+        historyTokenBudget: this.settings.historyTokenBudget,
+        responseReserveTokens: this.settings.responseReserveTokens,
+        autoCompactThreshold: this.settings.autoCompactThreshold,
+        keepLastTurns: this.settings.keepLastTurns
+      },
+      onStatus: (s) => {
+        if (s === "compacting") {
+          this.setCompacting(true);
+          this.statusBar.render("compacting");
+        } else {
+          this.setCompacting(false);
+          this.statusBar.render("thinking");
+        }
+      },
+      onCompacted: async () => {
+        await this.conversations.save(this.currentConversation);
+      },
+      i18n: this.i18n
+    });
     this.currentLoop = new AgentLoop({
       provider,
       conversation: this.currentConversation,
       tools,
       approvalQueue: this.approvalQueue,
-      systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
+      prepareContext: () => ctxMgr.prepare(),
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
-      historyBudget: this.settings.historyTokenBudget,
       computeDiff: (p) => this.computeDiff(p)
     });
     this.statusBar.render("thinking");
@@ -5962,6 +6301,7 @@ var ObsidianAgentPlugin = class extends import_obsidian6.Plugin {
       yield* this.currentLoop.send(text2);
     } finally {
       this.statusBar.render("idle");
+      this.setCompacting(false);
       this.currentLoop = null;
       await this.conversations.save(this.currentConversation);
       this.emitSummary();
@@ -6019,16 +6359,30 @@ ${p.args.content}`;
     const ctx = { vault: this.vault, activeFile: () => null, selection: () => "" };
     const tools = buildToolRegistry(ctx, "scheduled");
     const promptKey = kind === "daily" ? "prompt.scheduled.daily" : "prompt.scheduled.weekly";
+    const systemPrompt = this.i18n.t(promptKey);
     conv.append({ role: "user", content: `Target folder: ${cfg.targetFolder}` });
+    const ctxMgr = new ContextManager({
+      conversation: conv,
+      systemPrompt,
+      provider,
+      model: this.settings.model,
+      providerId: this.settings.providerId,
+      settings: {
+        historyTokenBudget: this.settings.historyTokenBudget,
+        responseReserveTokens: this.settings.responseReserveTokens,
+        autoCompactThreshold: this.settings.autoCompactThreshold,
+        keepLastTurns: this.settings.keepLastTurns
+      },
+      i18n: this.i18n
+    });
     const loop2 = new AgentLoop({
       provider,
       conversation: conv,
       tools,
       approvalQueue: this.approvalQueue,
-      systemPrompt: this.i18n.t(promptKey),
+      prepareContext: () => ctxMgr.prepare(),
       maxIterations: this.settings.maxIterations,
-      turnTimeoutMs: this.settings.turnTimeoutMs,
-      historyBudget: this.settings.historyTokenBudget
+      turnTimeoutMs: this.settings.turnTimeoutMs
     });
     for await (const _ of loop2.run()) {
     }

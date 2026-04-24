@@ -4,6 +4,7 @@
   "chat.new": "New chat",
   "chat.mode.ask": "Ask",
   "chat.mode.edit": "Edit",
+  "chat.compacting": "Compacting conversation…",
   "diff.approve": "Approve",
   "diff.reject": "Reject",
   "diff.applyAll": "Apply All",
@@ -17,5 +18,6 @@
   "prompt.system.ask": "You are a knowledge-base assistant. Use tools to search and read notes. Cite note paths.",
   "prompt.system.edit": "You are a knowledge-base assistant with editing abilities. All writes require user approval. Produce minimal diffs.",
   "prompt.scheduled.daily": "Summarize notes modified today. Produce one new note with headings per topic and links back.",
-  "prompt.scheduled.weekly": "Produce a weekly review of the past 7 days. Highlight themes and open loops in one new note."
+  "prompt.scheduled.weekly": "Produce a weekly review of the past 7 days. Highlight themes and open loops in one new note.",
+  "prompt.compact": "You are a summarization assistant. Produce a dense prose summary (200–400 words) of the conversation below, preserving:\n- The user's original intent and questions\n- Key decisions made and their rationale\n- File paths created, edited, or referenced\n- Outstanding tasks and open questions\n- Important information discovered\n\nBe concise but complete. Do not omit critical details. Write in third person (e.g., \"The user asked...\", \"The assistant found...\")."
 }

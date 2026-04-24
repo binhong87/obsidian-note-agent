@@ -1,9 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { approxTokens, trimHistory } from "../../src/agent/history-trimmer";
+import { approxTokens, msgTokens, totalTokens, trimHistory } from "../../src/agent/history-trimmer";
 
 describe("history trimmer", () => {
   it("approxTokens uses ~4 chars/token heuristic", () => {
     expect(approxTokens("a".repeat(400))).toBe(100);
+  });
+  it("msgTokens is exported and counts content + overhead", () => {
+    const m = { role: "user" as const, content: "a".repeat(400) };
+    // approxTokens("a".repeat(400)) = 100 + 4 overhead = 104
+    expect(msgTokens(m)).toBe(104);
+  });
+  it("totalTokens sums all messages", () => {
+    const msgs = [
+      { role: "user" as const, content: "a".repeat(400) },
+      { role: "assistant" as const, content: "b".repeat(400) },
+    ];
+    expect(totalTokens(msgs)).toBe(104 + 104);
   });
   it("passes through when under budget", () => {
     const msgs = [{ role: "user" as const, content: "hi" }];

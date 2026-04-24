@@ -11,13 +11,16 @@
   let pending = plugin.approvalQueue.list();
   let messages = plugin.currentConversation.messages.slice();
   let streamBuf = "";
+  let compacting = plugin.compacting;
   let textarea: HTMLTextAreaElement;
   let showHistory = false;
 
   const unsub = plugin.approvalQueue.onChange(list => {
     pending = list;
   });
+  const unsubCompacting = plugin.onCompactingChange(v => { compacting = v; });
   onDestroy(unsub);
+  onDestroy(unsubCompacting);
 
   function autoResize() {
     if (!textarea) return;
@@ -116,7 +119,7 @@
   {/if}
 
   <!-- Message area -->
-  <MessageList {messages} {streamBuf} {pending} {plugin} {busy} />
+  <MessageList {messages} {streamBuf} {pending} {plugin} {busy} {compacting} />
 
   <!-- Input area -->
   <div class="ac-input-wrap">

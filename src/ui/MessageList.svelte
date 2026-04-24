@@ -10,6 +10,7 @@
   export let pending: any[];
   export let plugin: ObsidianAgentPlugin;
   export let busy: boolean = false;
+  export let compacting: boolean = false;
 
   let scrollEl: HTMLDivElement;
   let userScrolledUp = false;
@@ -112,6 +113,14 @@
       <div class="ml-name ml-name-agent">Agent</div>
       <div class="ml-content" use:markdown={{ text: streamBuf, plugin }}></div>
       <span class="ml-cursor" aria-hidden="true"></span>
+    </div>
+  {:else if compacting}
+    <div class="ml-turn ml-turn-agent ml-thinking-turn">
+      <div class="ml-name ml-name-agent">Agent</div>
+      <div class="ml-compacting" aria-live="polite" aria-label={plugin.i18n.t("chat.compacting")}>
+        <span class="ml-dot"></span><span class="ml-dot"></span><span class="ml-dot"></span>
+        <span class="ml-compacting-label">{plugin.i18n.t("chat.compacting")}</span>
+      </div>
     </div>
   {:else if busy}
     <div class="ml-turn ml-turn-agent ml-thinking-turn">
@@ -233,6 +242,20 @@
     gap: 4px;
     padding: 2px 0;
     min-height: 1em;
+  }
+  /* Compacting indicator — same dots + label */
+  .ml-compacting {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+    min-height: 1em;
+  }
+  .ml-compacting-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: 4px;
+    font-style: italic;
   }
   .ml-dot {
     width: 5px;

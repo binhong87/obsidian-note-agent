@@ -2,7 +2,7 @@ import type { Message } from "../types";
 
 export function approxTokens(s: string): number { return Math.ceil(s.length / 4); }
 
-function msgTokens(m: Message): number {
+export function msgTokens(m: Message): number {
   let n = approxTokens(m.content ?? "") + 4;
   if (m.toolCalls?.length) {
     for (const tc of m.toolCalls) n += approxTokens(tc.name) + approxTokens(JSON.stringify(tc.args)) + 8;
@@ -10,7 +10,7 @@ function msgTokens(m: Message): number {
   return n;
 }
 
-function totalTokens(msgs: Message[]): number {
+export function totalTokens(msgs: Message[]): number {
   let n = 0; for (const m of msgs) n += msgTokens(m);
   return n;
 }

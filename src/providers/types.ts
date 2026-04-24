@@ -7,6 +7,9 @@ export interface ChatRequest {
   tools: ToolSchema[];
   temperature?: number;
   signal?: AbortSignal;
+  /** messages[0..cacheableBoundary] inclusive are treated as a stable prefix for caching.
+   *  Providers that do not support caching ignore this field. */
+  cacheableBoundary?: number;
 }
 
 export interface LLMProvider {
