@@ -49,7 +49,7 @@ export class VaultService {
 
   async listFolder(path: string): Promise<string[]> {
     const p = path === "" ? "" : validatePath(path);
-    return this.app.vault.getMarkdownFiles()
+    return this.app.vault.getFiles()
       .map(f => f.path)
       .filter(fp => p === "" || fp === p || fp.startsWith(p + "/"));
   }

@@ -82,11 +82,6 @@ export class AgentSettingsTab extends PluginSettingTab {
           if (n > 0) { s.turnTimeoutMs = n * 1000; await this.plugin.saveSettings(); }
         }));
 
-    new Setting(containerEl).setName(t("settings.chatsFolder")).addText(x => {
-      wide(x.inputEl);
-      x.setValue(s.chatsFolder).onChange(async v => { s.chatsFolder = v; await this.plugin.saveSettings(); });
-    });
-
     new Setting(containerEl).setName(t("settings.language")).addDropdown(d =>
       d.addOption("auto", t("settings.language.auto")).addOption("en", "English").addOption("zh-CN", "中文")
         .setValue(s.locale).onChange(async v => {
@@ -97,21 +92,16 @@ export class AgentSettingsTab extends PluginSettingTab {
           await this.plugin.reopenChatView();
         }));
 
-    containerEl.createEl("h3", { text: t("settings.scheduled") });
-
-    this.scheduledRow(containerEl, t("settings.scheduled.daily"), s.scheduled.dailySummary, false);
-    this.scheduledRow(containerEl, t("settings.scheduled.weekly"), s.scheduled.weeklyReview, true);
-  }
-
-  private scheduledRow(container: HTMLElement, label: string, cfg: any, weekly: boolean) {
-    const t = this.plugin.i18n.t.bind(this.plugin.i18n);
-    new Setting(container).setName(label)
-      .addToggle(tg => tg.setValue(cfg.enabled).onChange(async v => { cfg.enabled = v; await this.plugin.saveSettings(); }))
-      .addText(x => x.setPlaceholder(t("settings.scheduled.timePH")).setValue(cfg.time).onChange(async v => { cfg.time = v; await this.plugin.saveSettings(); }))
-      .addText(x => x.setPlaceholder(t("settings.scheduled.folderPH")).setValue(cfg.targetFolder).onChange(async v => { cfg.targetFolder = v; await this.plugin.saveSettings(); }));
-    if (weekly) {
-      new Setting(container).setName(t("settings.scheduled.weekday")).addText(x =>
-        x.setValue(String(cfg.weekday ?? 0)).onChange(async v => { cfg.weekday = Number(v); await this.plugin.saveSettings(); }));
-    }
+    containerEl.createEl("h3", { text: t("settings.userProfile") });
+    new Setting(containerEl)
+      .setDesc(t("settings.userProfile.desc"))
+      .addTextArea(x => {
+        x.inputEl.style.width = "100%";
+        x.inputEl.style.minHeight = "96px";
+        x.inputEl.style.resize = "vertical";
+        x.setPlaceholder(t("settings.userProfile.placeholder"))
+          .setValue(s.userProfile)
+          .onChange(async v => { s.userProfile = v; await this.plugin.saveSettings(); });
+      });
   }
 }

@@ -1,5 +1,4 @@
-import { Plugin, WorkspaceLeaf, Notice, moment } from "obsidian";
-import { migrateSettings, Settings, activeProfile } from "./settings";
+import { Plugin, WorkspaceLeaf, Notice, moment } from "obsidian";import { migrateSettings, Settings, activeProfile } from "./settings";
 import { I18n, detectLocale } from "./services/i18n";
 import { VaultService } from "./services/vault-service";
 import { ConversationStore } from "./services/conversation-store";
@@ -36,7 +35,7 @@ export default class ObsidianAgentPlugin extends Plugin {
     this.settings = migrateSettings(await this.loadData());
     this.i18n = new I18n(detectLocale(this.settings.locale, moment.locale()));
     this.vault = new VaultService(this.app);
-    this.conversations = new ConversationStore(this.vault, () => this.settings.chatsFolder);
+    this.conversations = new ConversationStore(this.app, () => this.settings.chatsFolder);
     this.approvalQueue = new ApprovalQueue({ commit: (pw) => this.commitWrite(pw) });
     this.currentConversation = this.newConversation();
 
@@ -51,6 +50,10 @@ export default class ObsidianAgentPlugin extends Plugin {
 
     this.scheduler = new SchedulerService(() => this.settings, (kind, cfg) => this.runScheduled(kind, cfg));
     this.scheduler.start();
+
+    if (this.settings.historyRetentionDays > 0) {
+      this.conversations.purgeOlderThan(this.settings.historyRetentionDays).catch(() => {});
+    }
   }
 
   onunload() { this.scheduler?.stop(); this.currentLoop?.cancel(); this.approvalQueue?.clear(); }
@@ -106,9 +109,13 @@ export default class ObsidianAgentPlugin extends Plugin {
     const tools = buildToolRegistry(ctx, this.currentConversation.mode);
     this.lastTurnSummary = { created: [], edited: [], deleted: [] };
 
+    const basePrompt = this.i18n.t(systemPromptKey(this.currentConversation.mode));
+    const profileText = this.settings.userProfile?.trim();
+    const systemPrompt = profileText ? `${basePrompt}\n\n## About the user\n${profileText}` : basePrompt;
+
     const ctxMgr = new ContextManager({
       conversation: this.currentConversation,
-      systemPrompt: this.i18n.t(systemPromptKey(this.currentConversation.mode)),
+      systemPrompt,
       provider,
       model: prof.model,
       providerId: this.settings.providerId,
@@ -142,6 +149,9 @@ export default class ObsidianAgentPlugin extends Plugin {
       maxIterations: this.settings.maxIterations,
       turnTimeoutMs: this.settings.turnTimeoutMs,
       computeDiff: (p) => this.computeDiff(p),
+      autoApprove: this.settings.autoApprove
+        ? (p) => this.autoApproveAndBackup(p)
+        : undefined,
     });
     this.statusBar.render("thinking");
     try { yield* this.currentLoop.send(text); }
@@ -181,6 +191,24 @@ export default class ObsidianAgentPlugin extends Plugin {
       case "move_note": await this.vault.moveNote(p.args.from, p.args.to); this.lastTurnSummary.edited.push(p.args.to); break;
     }
     this.emitSummary();
+  }
+
+  private async autoApproveAndBackup(p: { tool: string; args: any }): Promise<void> {
+    const backupTools = ["edit_note", "delete_note", "apply_patch"];
+    if (backupTools.includes(p.tool)) {
+      const path = p.args.path as string;
+      const ts = autoBackupTimestamp();
+      const backupPath = `__auto_backup__/${ts}/${path}`;
+      try {
+        const content = await this.vault.readNote(path);
+        await this.vault.createNote(backupPath, content);
+        const file = path.split("/").pop() ?? path;
+        new Notice(this.i18n.t("notice.autoBackup", { file }), 4000);
+      } catch (e) {
+        console.warn("[agent] auto-backup failed:", e);
+      }
+    }
+    await this.commitWrite(p);
   }
 
   private async runScheduled(kind: "daily" | "weekly", cfg: any): Promise<void> {
@@ -248,4 +276,10 @@ function simpleDiff(a: string, b: string): string {
     else { if (al[i] !== undefined) out.push("- " + al[i]); if (bl[i] !== undefined) out.push("+ " + bl[i]); }
   }
   return out.join("\n");
+}
+
+function autoBackupTimestamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }

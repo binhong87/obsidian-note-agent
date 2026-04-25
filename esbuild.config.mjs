@@ -1,9 +1,12 @@
 import esbuild from "esbuild";
 import sveltePlugin from "esbuild-svelte";
 import sveltePreprocess from "svelte-preprocess";
-import { copyFileSync, existsSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
 
 const prod = process.argv[2] === "production";
+
+mkdirSync("dist", { recursive: true });
+
 const ctx = await esbuild.context({
   entryPoints: ["src/main.ts"],
   bundle: true,
@@ -11,21 +14,20 @@ const ctx = await esbuild.context({
   format: "cjs",
   target: "es2020",
   sourcemap: prod ? false : "inline",
-  outfile: "main.js",
+  outfile: "dist/main.js",
   plugins: [sveltePlugin({ preprocess: sveltePreprocess() })],
 });
 
-function copyStyles() {
-  if (existsSync("main.css")) copyFileSync("main.css", "styles.css");
+function copyAssets() {
+  if (existsSync("main.css")) copyFileSync("main.css", "dist/styles.css");
+  copyFileSync("manifest.json", "dist/manifest.json");
 }
 
 if (prod) {
   await ctx.rebuild();
-  copyStyles();
+  copyAssets();
   process.exit(0);
 } else {
-  // In watch mode, copy styles after each rebuild
   await ctx.watch();
-  // Perform initial copy
-  copyStyles();
+  copyAssets();
 }

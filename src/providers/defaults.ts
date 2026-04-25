@@ -6,7 +6,7 @@ export interface ProviderDefault {
 }
 
 export const PROVIDER_DEFAULTS: Record<ProviderId, ProviderDefault> = {
-  deepseek:   { baseUrl: "https://api.deepseek.com",                             model: "deepseek-chat" },
+  deepseek:   { baseUrl: "https://api.deepseek.com",                             model: "deepseek-v4-pro" },
   qwen:       { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",    model: "qwen-plus" },
   kimi:       { baseUrl: "https://api.moonshot.cn/v1",                           model: "moonshot-v1-8k" },
   zhipu:      { baseUrl: "https://open.bigmodel.cn/api/paas/v4",                 model: "glm-4-plus" },

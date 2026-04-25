@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Notice } from "obsidian";
   import type ObsidianAgentPlugin from "../main";
   export let p: any;
   export let plugin: ObsidianAgentPlugin;
@@ -43,6 +44,11 @@
   $: diffLines = p.diff ? parseDiff(p.diff) : [];
   $: filePath = p.args?.path ?? p.args?.from ?? p.args?.to ?? "";
   $: fileName = filePath ? filePath.split("/").pop() ?? filePath : "";
+
+  async function approveItem() {
+    try { await plugin.approvalQueue.approve(p.toolCallId); }
+    catch (e) { new Notice(`Could not apply: ${e instanceof Error ? e.message : String(e)}`, 6000); }
+  }
 </script>
 
 <div class="db-root">
@@ -64,7 +70,7 @@
       {/if}
     </div>
     <div class="db-actions">
-      <button class="db-btn db-approve" on:click={() => plugin.approvalQueue.approve(p.toolCallId)}>
+      <button class="db-btn db-approve" on:click={approveItem}>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
         {t("diff.approve")}
       </button>

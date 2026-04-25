@@ -20,7 +20,7 @@ export function buildReadTools(ctx: ToolContext): Tool[] {
     },
     {
       name: "list_folder", kind: "read",
-      schema: { name: "list_folder", description: "List note paths under a folder.",
+      schema: { name: "list_folder", description: "List all file paths under a folder (notes, attachments, canvas, etc.). Pass an empty string to list the vault root.",
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } },
       handler: (a) => safe(async () => JSON.stringify(await ctx.vault.listFolder(String(a.path ?? "")))),
     },

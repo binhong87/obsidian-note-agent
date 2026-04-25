@@ -1,5 +1,6 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
+  import { Notice } from "obsidian";
   import DiffReviewBlock from "./DiffReviewBlock.svelte";
   import ChangeSummary from "./ChangeSummary.svelte";
   import { markdown } from "./markdown-action";
@@ -56,6 +57,11 @@
       if (typeof json === "string") return json.slice(0, 80);
     } catch { /* not JSON */ }
     return content.length > 80 ? content.slice(0, 80) + "…" : content;
+  }
+
+  async function applyAll() {
+    const failed = await plugin.approvalQueue.approveAll();
+    if (failed.length) new Notice(`${failed.length} operation(s) could not be applied.`, 6000);
   }
 </script>
 
@@ -133,7 +139,7 @@
 
   {#if pending.length}
     <div class="ml-bulk-actions">
-      <button class="ml-bulk-btn ml-bulk-approve" on:click={() => plugin.approvalQueue.approveAll()}>
+      <button class="ml-bulk-btn ml-bulk-approve" on:click={applyAll}>
         {plugin.i18n.t("diff.applyAll")}
       </button>
       <button class="ml-bulk-btn ml-bulk-reject" on:click={() => plugin.approvalQueue.rejectAll()}>

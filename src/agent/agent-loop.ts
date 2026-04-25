@@ -21,6 +21,8 @@ export interface AgentLoopOpts {
    *  Replaces the old historyBudget + trimHistory path; may trigger compaction. */
   prepareContext: () => Promise<PrepareContextResult>;
   computeDiff?: (pending: { tool: string; args: Record<string, unknown> }) => Promise<string>;
+  /** When set, called instead of queuing for user approval. Auto-approve mode. */
+  autoApprove?: (payload: { tool: string; args: Record<string, unknown> }) => Promise<void>;
 }
 
 export interface LoopEvent {
@@ -102,10 +104,17 @@ export class AgentLoop {
         console.debug(`[agent] tool result (${tc.name}):`, result.slice(0, 300));
         if (result.startsWith(PENDING_PREFIX)) {
           const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
-          const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
-          approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
-          conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "queued" }) });
-          yield { type: "pending", toolCallId: tc.id, pending: payload, diff };
+          if (this.opts.autoApprove) {
+            await this.opts.autoApprove(payload);
+            const applied = JSON.stringify({ status: "applied" });
+            conversation.append({ role: "tool", toolCallId: tc.id, content: applied });
+            yield { type: "tool", toolCallId: tc.id, result: applied };
+          } else {
+            const diff = this.opts.computeDiff ? await this.opts.computeDiff(payload) : "";
+            approvalQueue.enqueue({ toolCallId: tc.id, tool: payload.tool, args: payload.args, diff });
+            conversation.append({ role: "tool", toolCallId: tc.id, content: JSON.stringify({ status: "queued" }) });
+            yield { type: "pending", toolCallId: tc.id, pending: payload, diff };
+          }
         } else {
           conversation.append({ role: "tool", toolCallId: tc.id, content: result });
           yield { type: "tool", toolCallId: tc.id, result };
