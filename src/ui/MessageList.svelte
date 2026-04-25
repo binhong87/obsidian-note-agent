@@ -4,12 +4,12 @@
   import DiffReviewBlock from "./DiffReviewBlock.svelte";
   import ChangeSummary from "./ChangeSummary.svelte";
   import { markdown } from "./markdown-action";
-  import type ObsidianAgentPlugin from "../main";
+  import type ObsidianNoteAgentPlugin from "../main";
 
   export let messages: any[];
   export let streamBuf: string;
   export let pending: any[];
-  export let plugin: ObsidianAgentPlugin;
+  export let plugin: ObsidianNoteAgentPlugin;
   export let busy: boolean = false;
   export let compacting: boolean = false;
 

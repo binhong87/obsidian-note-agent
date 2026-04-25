@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import type ObsidianAgentPlugin from "../main";
-  export let plugin: ObsidianAgentPlugin;
+  import type ObsidianNoteAgentPlugin from "../main";
+  export let plugin: ObsidianNoteAgentPlugin;
 
   let mode = plugin.settings.mode;
   let autoApprove = plugin.settings.autoApprove;

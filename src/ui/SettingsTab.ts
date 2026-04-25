@@ -1,11 +1,11 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import type ObsidianAgentPlugin from "../main";
+import type ObsidianNoteAgentPlugin from "../main";
 import { listProviderIds } from "../providers/registry";
 import { PROVIDER_DEFAULTS, defaultProfile } from "../providers/defaults";
 import type { ProviderId } from "../types";
 
 export class AgentSettingsTab extends PluginSettingTab {
-  constructor(app: App, private plugin: ObsidianAgentPlugin) { super(app, plugin); }
+  constructor(app: App, private plugin: ObsidianNoteAgentPlugin) { super(app, plugin); }
 
   display(): void {
     const { containerEl } = this; containerEl.empty();

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Notice } from "obsidian";
-  import type ObsidianAgentPlugin from "../main";
+  import type ObsidianNoteAgentPlugin from "../main";
   export let p: any;
-  export let plugin: ObsidianAgentPlugin;
+  export let plugin: ObsidianNoteAgentPlugin;
 
   const t = (k: string) => plugin.i18n.t(k);
 

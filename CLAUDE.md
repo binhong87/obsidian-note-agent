@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Single test: `npx vitest run tests/path/to/file.test.ts` (optionally `-t "test name"`).
 - No lint script is wired up, though `eslint` + `eslint-plugin-svelte` are installed; invoke via `npx eslint <path>` if needed.
 
-There is no install-into-vault step in scripts — `main.js`, `manifest.json`, and `styles.css` at the repo root are the plugin artifacts. Symlink or copy the repo into `<vault>/.obsidian/plugins/obsidian-agent/` for local testing.
+There is no install-into-vault step in scripts — `main.js`, `manifest.json`, and `styles.css` at the repo root are the plugin artifacts. Symlink or copy the repo into `<vault>/.obsidian/plugins/obsidian-note-agent/` for local testing.
 
 ## Architecture
 
@@ -19,7 +19,7 @@ This is an **Obsidian plugin** that adds an agentic chat pane capable of reading
 
 ### Layered structure (all under `src/`)
 
-- **`main.ts`** — `ObsidianAgentPlugin` (extends `Plugin`). Wires everything together, owns the single active `Conversation`, exposes `sendMessage()` as an async generator that streams `LoopEvent`s to the UI. Also contains the `commitWrite` / `computeDiff` bridge that turns pending tool calls into real vault mutations after UI approval, and runs `SchedulerService` jobs.
+- **`main.ts`** — `ObsidianNoteAgentPlugin` (extends `Plugin`). Wires everything together, owns the single active `Conversation`, exposes `sendMessage()` as an async generator that streams `LoopEvent`s to the UI. Also contains the `commitWrite` / `computeDiff` bridge that turns pending tool calls into real vault mutations after UI approval, and runs `SchedulerService` jobs.
 - **`agent/`** — provider-agnostic orchestration.
   - `agent-loop.ts` — the core tool-calling loop. For each iteration it assembles `[system, ...conversation.messages]`, passes through `trimHistory(budget)`, streams the provider response (text deltas + tool calls), then dispatches each tool call. Uses a per-iteration `AbortController` linked to both outer cancel and `turnTimeoutMs` — `AbortError` is translated into a user-facing timeout `LoopEvent`.
   - `approval-queue.ts` — gate write tools behind UI approval.

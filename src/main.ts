@@ -15,7 +15,7 @@ import { AgentChatView, VIEW_TYPE_AGENT_CHAT } from "./ui/chat-view";
 import { StatusBar } from "./ui/status-bar";
 import { applyUnifiedPatch } from "./utils/patch";
 
-export default class ObsidianAgentPlugin extends Plugin {
+export default class ObsidianNoteAgentPlugin extends Plugin {
   settings!: Settings;
   i18n!: I18n;
   vault!: VaultService;

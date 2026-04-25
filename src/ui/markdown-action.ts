@@ -1,9 +1,9 @@
 import { MarkdownRenderer, Component } from "obsidian";
-import type ObsidianAgentPlugin from "../main";
+import type ObsidianNoteAgentPlugin from "../main";
 
 export interface MarkdownParams {
   text: string;
-  plugin: ObsidianAgentPlugin;
+  plugin: ObsidianNoteAgentPlugin;
 }
 
 export function markdown(node: HTMLElement, params: MarkdownParams) {

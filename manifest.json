@@ -1,9 +1,10 @@
 {
-  "id": "obsidian-agent",
-  "name": "Obsidian Agent",
+  "id": "obsidian-note-agent",
+  "name": "Obsidian Note Agent",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Agentic assistant for personal knowledge management.",
-  "author": "You",
+  "description": "Agentic AI assistant for reading and editing vault notes.",
+  "author": "Bin-Home",
+  "authorUrl": "https://github.com/Bin-Home",
   "isDesktopOnly": false
 }

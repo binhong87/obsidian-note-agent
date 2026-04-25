@@ -1,7 +1,8 @@
-import type ObsidianAgentPlugin from "../main";
+import type ObsidianNoteAgentPlugin from "../main";
+import { activeProfile } from "../settings";
 
 export class StatusBar {
-  constructor(private plugin: ObsidianAgentPlugin, private el: HTMLElement) {
+  constructor(private plugin: ObsidianNoteAgentPlugin, private el: HTMLElement) {
     this.render("idle");
   }
   render(state: "idle" | "thinking" | "waiting" | "compacting") {
@@ -10,6 +11,6 @@ export class StatusBar {
       : state === "thinking" ? "…"
       : state === "compacting" ? "⟳"
       : "?";
-    this.el.setText(`${label} ${s.providerId}:${s.providers[s.providerId]?.model || "-"}`);
+    this.el.setText(`${label} ${s.providerId}:${activeProfile(s).model}`);
   }
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
-  import type ObsidianAgentPlugin from "../main";
-  export let plugin: ObsidianAgentPlugin;
+  import type ObsidianNoteAgentPlugin from "../main";
+  export let plugin: ObsidianNoteAgentPlugin;
 
   const dispatch = createEventDispatcher<{ select: void; newChat: void }>();
 

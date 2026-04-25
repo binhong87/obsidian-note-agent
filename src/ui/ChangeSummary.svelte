@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type ObsidianAgentPlugin from "../main";
-  export let plugin: ObsidianAgentPlugin;
+  import type ObsidianNoteAgentPlugin from "../main";
+  export let plugin: ObsidianNoteAgentPlugin;
 
   let summary = plugin.lastTurnSummary;
   plugin.onSummaryChange(s => (summary = s));

@@ -3,8 +3,9 @@
   import MessageList from "./MessageList.svelte";
   import ModeToggle from "./ModeToggle.svelte";
   import ConversationList from "./ConversationList.svelte";
-  import type ObsidianAgentPlugin from "../main";
-  export let plugin: ObsidianAgentPlugin;
+  import type ObsidianNoteAgentPlugin from "../main";
+  import { activeProfile } from "../settings";
+  export let plugin: ObsidianNoteAgentPlugin;
 
   let input = "";
   let busy = false;
@@ -92,7 +93,7 @@
       setting.openTabById?.(plugin.manifest.id);
     }
   }
-  $: providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)} / ${plugin.settings.providers[plugin.settings.providerId]?.model || "–"}`);
+  $: providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)}:${activeProfile(plugin.settings).model}`);
   $: charCount = input.length;
   $: showCharCount = charCount > 500;
 </script>
