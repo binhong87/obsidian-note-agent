@@ -73,14 +73,14 @@ npm run build     # tsc 类型检查 + 生产构建
 npm test          # 单元测试（Vitest）
 ```
 
-本地测试时，将仓库文件夹软链接或复制到您的笔记库：
+本地测试时，将 `dist/` 文件夹软链接或复制到您的笔记库：
 
 ```
 <笔记库>/.obsidian/plugins/obsidian-note-agent/
 ```
 
-插件产物为仓库根目录下的 `main.js`、`manifest.json` 和 `styles.css`。
+插件产物（`main.js`、`manifest.json`、`styles.css`）在每次构建后输出到 `dist/` 目录。
 
 ## 许可证
 
-MIT
+[MIT](LICENSE)

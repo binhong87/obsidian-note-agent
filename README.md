@@ -73,14 +73,14 @@ npm run build     # tsc type-check + production bundle
 npm test          # unit tests (Vitest)
 ```
 
-For local testing, symlink or copy the repo folder into your vault:
+For local testing, symlink or copy the `dist/` folder into your vault:
 
 ```
 <vault>/.obsidian/plugins/obsidian-note-agent/
 ```
 
-The plugin artifacts are `main.js`, `manifest.json`, and `styles.css` at the repo root.
+The plugin artifacts (`main.js`, `manifest.json`, `styles.css`) are output to `dist/` after each build.
 
 ## License
 
-MIT
+[MIT](LICENSE)
