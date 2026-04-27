@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import sveltePlugin from "esbuild-svelte";
 import sveltePreprocess from "svelte-preprocess";
-import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, renameSync } from "fs";
 
 const prod = process.argv[2] === "production";
 
@@ -19,7 +19,7 @@ const ctx = await esbuild.context({
 });
 
 function copyAssets() {
-  if (existsSync("main.css")) copyFileSync("main.css", "dist/styles.css");
+  if (existsSync("dist/main.css")) renameSync("dist/main.css", "dist/styles.css");
   copyFileSync("manifest.json", "dist/manifest.json");
 }
 
