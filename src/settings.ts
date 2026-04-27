@@ -56,7 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   providerId: "openai",
   providers: defaultProviders(),
   mode: "ask",
-  chatsFolder: ".obsidian/plugins/obsidian-note-agent/chats",
+  chatsFolder: ".obsidian/plugins/smart-note-agent/chats",
   locale: "auto",
   userProfile: "",
   historyRetentionDays: 30,

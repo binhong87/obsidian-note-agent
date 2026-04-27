@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import ChatView from "./ChatView.svelte";
 import type ObsidianNoteAgentPlugin from "../main";
 
-export const VIEW_TYPE_AGENT_CHAT = "obsidian-note-agent-chat";
+export const VIEW_TYPE_AGENT_CHAT = "smart-note-agent-chat";
 
 export class AgentChatView extends ItemView {
   private component: ChatView | null = null;

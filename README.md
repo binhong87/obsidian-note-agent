@@ -1,4 +1,4 @@
-# Obsidian Note Agent
+# Smart Note Agent
 
 An agentic AI assistant plugin for [Obsidian](https://obsidian.md) that can read and — with your approval — modify vault notes, powered by your choice of LLM provider.
 
@@ -31,13 +31,13 @@ An agentic AI assistant plugin for [Obsidian](https://obsidian.md) that can read
 ### Manual
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest)
-2. Create the folder `<your-vault>/.obsidian/plugins/obsidian-note-agent/`
+2. Create the folder `<your-vault>/.obsidian/plugins/smart-note-agent/`
 3. Copy the three files into that folder
 4. Reload Obsidian and enable the plugin in **Settings → Community plugins**
 
 ## Setup
 
-1. Open **Settings → Obsidian Note Agent**
+1. Open **Settings → Smart Note Agent**
 2. Select your LLM provider and enter your API key
 3. Optionally set a custom base URL (for self-hosted or proxy endpoints) and model name
 4. Choose a mode: **Ask** for read-only access, **Edit** for write access
@@ -76,7 +76,7 @@ npm test          # unit tests (Vitest)
 For local testing, symlink or copy the `dist/` folder into your vault:
 
 ```
-<vault>/.obsidian/plugins/obsidian-note-agent/
+<vault>/.obsidian/plugins/smart-note-agent/
 ```
 
 The plugin artifacts (`main.js`, `manifest.json`, `styles.css`) are output to `dist/` after each build.

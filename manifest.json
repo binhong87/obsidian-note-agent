@@ -1,6 +1,6 @@
 {
-  "id": "obsidian-note-agent",
-  "name": "Obsidian Note Agent",
+  "id": "smart-note-agent",
+  "name": "Smart Note Agent",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "Agentic AI assistant for reading and editing vault notes.",

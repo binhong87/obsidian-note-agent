@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Single test: `npx vitest run tests/path/to/file.test.ts` (optionally `-t "test name"`).
 - No lint script is wired up, though `eslint` + `eslint-plugin-svelte` are installed; invoke via `npx eslint <path>` if needed.
 
-There is no install-into-vault step in scripts — `main.js`, `manifest.json`, and `styles.css` at the repo root are the plugin artifacts. Symlink or copy the repo into `<vault>/.obsidian/plugins/obsidian-note-agent/` for local testing.
+There is no install-into-vault step in scripts — `main.js`, `manifest.json`, and `styles.css` at the repo root are the plugin artifacts. Symlink or copy the repo into `<vault>/.obsidian/plugins/smart-note-agent/` for local testing.
 
 ## Architecture
 

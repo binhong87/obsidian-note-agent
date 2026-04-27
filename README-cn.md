@@ -1,4 +1,4 @@
-# Obsidian Note Agent
+# Smart Note Agent
 
 一款为 [Obsidian](https://obsidian.md) 设计的智能体 AI 助手插件，能够读取并（在您批准后）修改笔记库中的笔记，支持多种 LLM 服务提供商。
 
@@ -31,13 +31,13 @@
 ### 手动安装
 
 1. 从[最新发布页面](../../releases/latest)下载 `main.js`、`manifest.json` 和 `styles.css`
-2. 创建文件夹 `<您的笔记库>/.obsidian/plugins/obsidian-note-agent/`
+2. 创建文件夹 `<您的笔记库>/.obsidian/plugins/smart-note-agent/`
 3. 将三个文件复制到该文件夹
 4. 重启 Obsidian，在**设置 → 第三方插件**中启用该插件
 
 ## 配置
 
-1. 打开**设置 → Obsidian Note Agent**
+1. 打开**设置 → Smart Note Agent**
 2. 选择 LLM 服务提供商并输入 API Key
 3. 可选：设置自定义基础 URL（用于自托管或代理端点）及模型名称
 4. 选择模式：**问答模式**（只读）或**编辑模式**（可写入）
@@ -76,7 +76,7 @@ npm test          # 单元测试（Vitest）
 本地测试时，将 `dist/` 文件夹软链接或复制到您的笔记库：
 
 ```
-<笔记库>/.obsidian/plugins/obsidian-note-agent/
+<笔记库>/.obsidian/plugins/smart-note-agent/
 ```
 
 插件产物（`main.js`、`manifest.json`、`styles.css`）在每次构建后输出到 `dist/` 目录。
