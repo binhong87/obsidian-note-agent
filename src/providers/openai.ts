@@ -28,6 +28,7 @@ export class OpenAIProvider implements LLMProvider {
       let obj: any; try { obj = JSON.parse(ev.data); } catch { continue; }
       const delta = obj.choices?.[0]?.delta;
       if (!delta) continue;
+      if (delta.reasoning_content) yield { type: "reasoning", text: delta.reasoning_content };
       if (delta.content) yield { type: "text", text: delta.content };
       for (const tc of delta.tool_calls ?? []) {
         const i = tc.index;
@@ -49,8 +50,12 @@ export class OpenAIProvider implements LLMProvider {
     if (m.role === "tool") return { role: "tool", tool_call_id: m.toolCallId, content: m.content };
     if (m.role === "assistant" && m.toolCalls?.length) {
       return { role: "assistant", content: m.content || null,
+        reasoning_content: m.reasoningContent || undefined,
         tool_calls: m.toolCalls.map((tc: any) => ({ id: tc.id, type: "function",
           function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) };
+    }
+    if (m.role === "assistant" && m.reasoningContent) {
+      return { role: "assistant", content: m.content, reasoning_content: m.reasoningContent };
     }
     return { role: m.role, content: m.content };
   }

@@ -18,4 +18,40 @@ describe("OpenAIProvider", () => {
     expect(tc.toolCall.args.path).toBe("a.md");
     expect(out[out.length - 1].type).toBe("done");
   });
+
+  it("streams reasoning_content as reasoning deltas and includes it in toOpenAIMsg", async () => {
+    const fakeSSE = async function* () {
+      yield { data: '{"choices":[{"delta":{"reasoning_content":"think..."}}]}' };
+      yield { data: '{"choices":[{"delta":{"content":"answer"}}]}' };
+      yield { data: "[DONE]" };
+    };
+    const p = new OpenAIProvider({ apiKey: "k", baseUrl: "" }, fakeSSE);
+    const out: any[] = [];
+    for await (const d of p.chat({ model: "m", messages: [], tools: [] })) out.push(d);
+
+    const reasoningDelta = out.find(d => d.type === "reasoning");
+    expect(reasoningDelta).toBeDefined();
+    expect(reasoningDelta.text).toBe("think...");
+
+    const textDelta = out.find(d => d.type === "text");
+    expect(textDelta?.text).toBe("answer");
+  });
+
+  it("serializes reasoning_content back in toOpenAIMsg for assistant messages", async () => {
+    const captured: any[] = [];
+    const fakeSSE = async function* (opts: any) {
+      captured.push(JSON.parse(opts.body));
+      yield { data: "[DONE]" };
+    };
+    const p = new OpenAIProvider({ apiKey: "k", baseUrl: "" }, fakeSSE as any);
+
+    const msgs: any[] = [
+      { role: "assistant", content: "answer", reasoningContent: "think...", toolCalls: [] },
+    ];
+    for await (const _ of p.chat({ model: "m", messages: msgs, tools: [] })) { /* drain */ }
+
+    const sent = captured[0].messages[0];
+    expect(sent.reasoning_content).toBe("think...");
+    expect(sent.content).toBe("answer");
+  });
 });
