@@ -19,7 +19,7 @@ describe("OpenAIProvider", () => {
     expect(out[out.length - 1].type).toBe("done");
   });
 
-  it("streams reasoning_content as reasoning deltas and includes it in toOpenAIMsg", async () => {
+  it("streams reasoning_content as reasoning deltas", async () => {
     const fakeSSE = async function* () {
       yield { data: '{"choices":[{"delta":{"reasoning_content":"think..."}}]}' };
       yield { data: '{"choices":[{"delta":{"content":"answer"}}]}' };
@@ -53,5 +53,29 @@ describe("OpenAIProvider", () => {
     const sent = captured[0].messages[0];
     expect(sent.reasoning_content).toBe("think...");
     expect(sent.content).toBe("answer");
+  });
+
+  it("serializes reasoning_content in toOpenAIMsg for assistant messages with tool calls", async () => {
+    const captured: any[] = [];
+    const fakeSSE = async function* (opts: any) {
+      captured.push(JSON.parse(opts.body));
+      yield { data: "[DONE]" };
+    };
+    const p = new OpenAIProvider({ apiKey: "k", baseUrl: "" }, fakeSSE as any);
+
+    const msgs: any[] = [
+      {
+        role: "assistant",
+        content: null,
+        reasoningContent: "think...",
+        toolCalls: [{ id: "tc_0", name: "read_note", args: { path: "a.md" } }],
+      },
+    ];
+    for await (const _ of p.chat({ model: "m", messages: msgs, tools: [] })) { /* drain */ }
+
+    const sent = captured[0].messages[0];
+    expect(sent.reasoning_content).toBe("think...");
+    expect(sent.tool_calls).toHaveLength(1);
+    expect(sent.tool_calls[0].function.name).toBe("read_note");
   });
 });

@@ -55,7 +55,7 @@ export class OpenAIProvider implements LLMProvider {
           function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) };
     }
     if (m.role === "assistant" && m.reasoningContent) {
-      return { role: "assistant", content: m.content, reasoning_content: m.reasoningContent };
+      return { role: "assistant", content: m.content || null, reasoning_content: m.reasoningContent };
     }
     return { role: m.role, content: m.content };
   }
