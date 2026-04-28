@@ -19,6 +19,7 @@ const TABLE: Array<{ provider: ProviderId; match: RegExp; caps: ModelCaps }> = [
   { provider: "minimax",   match: /./,                                caps: { contextWindow: 245_000, supportsPromptCache: false } },
   { provider: "openrouter",match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
   { provider: "ollama",    match: /./,                                caps: { contextWindow: 32_000,  supportsPromptCache: false } },
+  { provider: "lmstudio", match: /./,                                caps: { contextWindow: 32_000,  supportsPromptCache: false } },
 ];
 
 const DEFAULT: ModelCaps = { contextWindow: 32_000, supportsPromptCache: false };

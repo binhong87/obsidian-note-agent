@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { createProvider, listProviderIds } from "../../src/providers/registry";
 
 describe("provider registry", () => {
-  it("lists all eleven ids", () => {
+  it("lists all twelve ids", () => {
     expect(listProviderIds().sort()).toEqual(
-      ["anthropic","custom","deepseek","kimi","minimax","ollama","openai","openrouter","qwen","zai","zhipu"]
+      ["anthropic","custom","deepseek","kimi","lmstudio","minimax","ollama","openai","openrouter","qwen","zai","zhipu"]
     );
   });
   it("creates openai", () => {

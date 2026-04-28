@@ -3,6 +3,7 @@ import type { ProviderId } from "../types";
 import { OpenAIProvider } from "./openai";
 import { AnthropicProvider } from "./anthropic";
 import { OllamaProvider } from "./ollama";
+import { createLMStudio } from "./lmstudio";
 import { createDeepSeek } from "./deepseek";
 import { createQwen } from "./qwen";
 import { createKimi } from "./kimi";
@@ -18,6 +19,7 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
     case "openai": return new OpenAIProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl });
     case "anthropic": return new AnthropicProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl });
     case "ollama": return new OllamaProvider({ baseUrl: cfg.baseUrl || "http://localhost:11434" });
+    case "lmstudio": return createLMStudio(cfg.apiKey, cfg.baseUrl);
     case "openrouter": return createOpenRouter(cfg.apiKey, cfg.baseUrl);
     case "deepseek": return createDeepSeek(cfg.apiKey, cfg.baseUrl);
     case "qwen": return createQwen(cfg.apiKey, cfg.baseUrl);
@@ -34,5 +36,5 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
 }
 
 export function listProviderIds(): ProviderId[] {
-  return ["deepseek","qwen","kimi","zhipu","zai","minimax","openai","anthropic","openrouter","ollama","custom"];
+  return ["deepseek","qwen","kimi","zhipu","zai","minimax","openai","anthropic","openrouter","ollama","lmstudio","custom"];
 }

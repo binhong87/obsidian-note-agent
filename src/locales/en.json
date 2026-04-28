@@ -52,6 +52,7 @@
   "provider.anthropic": "Anthropic",
   "provider.openrouter": "OpenRouter",
   "provider.ollama": "Ollama",
+  "provider.lmstudio": "LM Studio",
   "provider.custom": "Custom",
   "settings.apiKey": "API key",
   "settings.baseUrl": "Base URL",

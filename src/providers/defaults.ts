@@ -16,6 +16,7 @@ export const PROVIDER_DEFAULTS: Record<ProviderId, ProviderDefault> = {
   anthropic:  { baseUrl: "https://api.anthropic.com",                            model: "claude-sonnet-4-6" },
   openrouter: { baseUrl: "https://openrouter.ai/api/v1",                         model: "openai/gpt-4o-mini" },
   ollama:     { baseUrl: "http://localhost:11434",                               model: "llama3.1" },
+  lmstudio:   { baseUrl: "http://localhost:1234/v1",                            model: "local-model" },
   custom:     { baseUrl: "",                                                     model: "" },
 };
 
