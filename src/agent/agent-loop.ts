@@ -66,6 +66,7 @@ export class AgentLoop {
           signal: iterAbort.signal,
         })) {
           if (d.type === "text" && d.text) { assistantMsg.content += d.text; yield { type: "text", text: d.text }; }
+          else if (d.type === "reasoning" && d.text) { assistantMsg.reasoningContent = (assistantMsg.reasoningContent ?? "") + d.text; }
           else if (d.type === "tool_call" && d.toolCall) { assistantMsg.toolCalls!.push(d.toolCall); }
           else if (d.type === "error") { console.error("[agent] provider error:", d.error); yield { type: "error", error: d.error }; stoppedEarly = true; break; }
           else if (d.type === "done") break;
@@ -88,6 +89,7 @@ export class AgentLoop {
       }
       if (stoppedEarly) return;
       if (this.abort.signal.aborted) { yield { type: "stopped", reason: "cancelled" }; return; }
+      if (!assistantMsg.reasoningContent) delete assistantMsg.reasoningContent;
       conversation.append(assistantMsg);
       const calls = assistantMsg.toolCalls ?? [];
       if (calls.length === 0) { yield { type: "done" }; return; }

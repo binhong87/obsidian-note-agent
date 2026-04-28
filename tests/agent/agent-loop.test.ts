@@ -90,6 +90,21 @@ describe("AgentLoop", () => {
     expect(toolMsgs).toBeLessThanOrEqual(3);
   });
 
+  it("stores reasoning delta content on assistant message", async () => {
+    const provider: any = mockProvider([
+      [{ type: "reasoning", text: "let me think" }, { type: "text", text: "answer" }, { type: "done" }],
+    ]);
+    const conv = new Conversation({ id: "c", mode: "ask", provider: "openai", model: "m" });
+    const loop = new AgentLoop({
+      provider, conversation: conv, tools: [], approvalQueue: new ApprovalQueue({ commit: async () => {} }),
+      prepareContext: makePrepareContext(conv), maxIterations: 5, turnTimeoutMs: 1000,
+    });
+    for await (const _ of loop.send("hi")) { /* drain */ }
+    const assistantMsg = conv.messages.find(m => m.role === "assistant");
+    expect(assistantMsg?.reasoningContent).toBe("let me think");
+    expect(assistantMsg?.content).toBe("answer");
+  });
+
   it("calls prepareContext before every iteration", async () => {
     const scripts = [
       [{ type: "tool_call", toolCall: { id: "t1", name: "echo", args: {} } }, { type: "done" }],
