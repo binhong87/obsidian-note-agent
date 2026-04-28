@@ -15,6 +15,7 @@ const TABLE: Array<{ provider: ProviderId; match: RegExp; caps: ModelCaps }> = [
   { provider: "qwen",      match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
   { provider: "kimi",      match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
   { provider: "zhipu",     match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
+  { provider: "zai",       match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
   { provider: "minimax",   match: /./,                                caps: { contextWindow: 245_000, supportsPromptCache: false } },
   { provider: "openrouter",match: /./,                                caps: { contextWindow: 128_000, supportsPromptCache: false } },
   { provider: "ollama",    match: /./,                                caps: { contextWindow: 32_000,  supportsPromptCache: false } },

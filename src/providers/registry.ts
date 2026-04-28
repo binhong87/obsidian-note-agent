@@ -7,6 +7,7 @@ import { createDeepSeek } from "./deepseek";
 import { createQwen } from "./qwen";
 import { createKimi } from "./kimi";
 import { createZhipu } from "./zhipu";
+import { createZai } from "./zai";
 import { createMiniMax } from "./minimax";
 import { createOpenRouter } from "./openrouter";
 
@@ -22,6 +23,7 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
     case "qwen": return createQwen(cfg.apiKey, cfg.baseUrl);
     case "kimi": return createKimi(cfg.apiKey, cfg.baseUrl);
     case "zhipu": return createZhipu(cfg.apiKey, cfg.baseUrl);
+    case "zai": return createZai(cfg.apiKey, cfg.baseUrl);
     case "minimax": return createMiniMax(cfg.apiKey, cfg.baseUrl);
     case "custom":
       return cfg.compat === "anthropic"
@@ -32,5 +34,5 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
 }
 
 export function listProviderIds(): ProviderId[] {
-  return ["deepseek","qwen","kimi","zhipu","minimax","openai","anthropic","openrouter","ollama","custom"];
+  return ["deepseek","qwen","kimi","zhipu","zai","minimax","openai","anthropic","openrouter","ollama","custom"];
 }

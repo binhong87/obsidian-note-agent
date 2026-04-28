@@ -46,6 +46,7 @@
   "provider.qwen": "Qwen（千问）",
   "provider.kimi": "Kimi",
   "provider.zhipu": "智谱GLM",
+  "provider.zai": "Z.ai（国际版）",
   "provider.minimax": "MiniMax",
   "provider.openai": "OpenAI",
   "provider.anthropic": "Anthropic",

@@ -1,6 +1,6 @@
 export type Mode = "ask" | "edit" | "scheduled";
 export type ProviderId =
-  | "deepseek" | "qwen" | "kimi" | "zhipu" | "minimax"
+  | "deepseek" | "qwen" | "kimi" | "zhipu" | "zai" | "minimax"
   | "openai" | "anthropic" | "openrouter" | "ollama"
   | "custom";
 export type Locale = "auto" | "en" | "zh-CN";
