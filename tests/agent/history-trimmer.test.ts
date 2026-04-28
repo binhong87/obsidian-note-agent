@@ -59,4 +59,12 @@ describe("history trimmer", () => {
       expect(asst).toBeUndefined();
     }
   });
+
+  it("includes reasoningContent tokens when present", () => {
+    const withoutReasoning = { role: "assistant" as const, content: "a".repeat(400) };
+    const withReasoning = { role: "assistant" as const, content: "a".repeat(400), reasoningContent: "b".repeat(400) };
+    expect(msgTokens(withReasoning)).toBeGreaterThan(msgTokens(withoutReasoning));
+    // approxTokens("b".repeat(400)) = 100, so withReasoning should be 100 more
+    expect(msgTokens(withReasoning)).toBe(msgTokens(withoutReasoning) + 100);
+  });
 });
