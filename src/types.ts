@@ -13,10 +13,11 @@ export interface Message {
   content: string;
   toolCalls?: ToolCall[];
   toolCallId?: string;
+  reasoningContent?: string;
 }
 
 export interface Delta {
-  type: "text" | "tool_call" | "done" | "error";
+  type: "text" | "tool_call" | "done" | "error" | "reasoning";
   text?: string;
   toolCall?: ToolCall;
   error?: { kind: string; message: string };
