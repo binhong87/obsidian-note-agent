@@ -60,4 +60,26 @@ describe("Conversation summary roundtrip", () => {
     expect(back.messages).toHaveLength(3);
     expect(back.messages[2].content).toBe("third");
   });
+
+  it("preserves reasoningContent through serialize/parse roundtrip", () => {
+    const c = new Conversation({ id: "rc1", mode: "ask", provider: "deepseek", model: "deepseek-reasoner" });
+    c.append({ role: "assistant", content: "Final answer.", reasoningContent: "Let me think step by step..." });
+    c.append({ role: "user", content: "Thanks" });
+
+    const md = serializeConversation(c);
+    const back = parseConversation(md);
+
+    expect(back.messages[0].reasoningContent).toBe("Let me think step by step...");
+    expect(back.messages[1].reasoningContent).toBeUndefined();
+  });
+
+  it("handles old-format messages without reasoningContent (backward compat)", () => {
+    const c = new Conversation({ id: "rc2", mode: "ask", provider: "openai", model: "gpt-4o" });
+    c.append({ role: "assistant", content: "No reasoning here." });
+
+    const md = serializeConversation(c);
+    const back = parseConversation(md);
+
+    expect(back.messages[0].reasoningContent).toBeUndefined();
+  });
 });

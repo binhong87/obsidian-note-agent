@@ -53,7 +53,7 @@ export function serializeConversation(c: Conversation): string {
     body += `${SUMMARY_OPEN}\n${c.summary}\n${SUMMARY_CLOSE}\n\n`;
   }
   body += c.messages.map(m => {
-    const meta = JSON.stringify({ role: m.role, toolCalls: m.toolCalls, toolCallId: m.toolCallId });
+    const meta = JSON.stringify({ role: m.role, toolCalls: m.toolCalls, toolCallId: m.toolCallId, reasoningContent: m.reasoningContent });
     return `<!-- meta: ${meta} -->\n${m.content}`;
   }).join(SEP);
 
@@ -87,7 +87,7 @@ export function parseConversation(md: string): Conversation {
     const meta = block.match(/^<!-- meta: (.+?) -->\n([\s\S]*)$/);
     if (!meta) continue;
     const parsed = JSON.parse(meta[1]);
-    messages.push({ role: parsed.role, content: meta[2], toolCalls: parsed.toolCalls, toolCallId: parsed.toolCallId });
+    messages.push({ role: parsed.role, content: meta[2], toolCalls: parsed.toolCalls, toolCallId: parsed.toolCallId, reasoningContent: parsed.reasoningContent });
   }
 
   const conv = new Conversation({
