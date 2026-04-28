@@ -92,7 +92,12 @@ describe("AgentLoop", () => {
 
   it("stores reasoning delta content on assistant message", async () => {
     const provider: any = mockProvider([
-      [{ type: "reasoning", text: "let me think" }, { type: "text", text: "answer" }, { type: "done" }],
+      [
+        { type: "reasoning", text: "part 1 " },
+        { type: "reasoning", text: "part 2" },
+        { type: "text", text: "answer" },
+        { type: "done" },
+      ],
     ]);
     const conv = new Conversation({ id: "c", mode: "ask", provider: "openai", model: "m" });
     const loop = new AgentLoop({
@@ -101,7 +106,7 @@ describe("AgentLoop", () => {
     });
     for await (const _ of loop.send("hi")) { /* drain */ }
     const assistantMsg = conv.messages.find(m => m.role === "assistant");
-    expect(assistantMsg?.reasoningContent).toBe("let me think");
+    expect(assistantMsg?.reasoningContent).toBe("part 1 part 2");
     expect(assistantMsg?.content).toBe("answer");
   });
 
