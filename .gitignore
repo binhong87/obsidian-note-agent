@@ -4,3 +4,6 @@ main.js.map
 coverage/
 data.json
 .DS_Store
+docs/
+.superpowers/
+.playwright-mcp/
