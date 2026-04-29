@@ -39,14 +39,14 @@ export class OpenAIProvider implements LLMProvider {
       }
     }
     for (const i of Object.keys(pending)) {
-      const p = pending[+i]; let args: any = {};
+      const p = pending[+i]; let args: Record<string, unknown> = {};
       try { args = JSON.parse(p.args || "{}"); } catch { args = { _raw: p.args }; }
       yield { type: "tool_call", toolCall: { id: p.id ?? `tc_${i}`, name: p.name, args } };
     }
     yield { type: "done" };
   }
 
-  private toOpenAIMsg(m: any): any {
+  private toOpenAIMsg(m: any): unknown {
     if (m.role === "tool") return { role: "tool", tool_call_id: m.toolCallId, content: m.content };
     if (m.role === "assistant" && m.toolCalls?.length) {
       return { role: "assistant", content: m.content || null,

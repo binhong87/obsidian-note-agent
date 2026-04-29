@@ -57,7 +57,7 @@ export class AgentLoop {
       const iterAbort = new AbortController();
       const propagate = () => iterAbort.abort();
       this.abort.signal.addEventListener("abort", propagate, { once: true });
-      const timer = setTimeout(() => { console.warn("[agent] turn timeout"); iterAbort.abort(); }, turnTimeoutMs);
+      const timer = activeWindow.setTimeout(() => { console.warn("[agent] turn timeout"); iterAbort.abort(); }, turnTimeoutMs);
       try {
         for await (const d of provider.chat({
           model: conversation.model, messages: preparedMsgs,
@@ -84,7 +84,7 @@ export class AgentLoop {
         yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
         return;
       } finally {
-        clearTimeout(timer);
+        activeWindow.clearTimeout(timer);
         this.abort.signal.removeEventListener("abort", propagate);
       }
       if (stoppedEarly) return;

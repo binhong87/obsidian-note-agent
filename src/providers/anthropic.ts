@@ -50,7 +50,7 @@ export class AnthropicProvider implements LLMProvider {
       } else if (o.type === "content_block_stop") {
         const b = blocks[o.index];
         if (b?.type === "tool_use") {
-          let args: any = {}; try { args = JSON.parse(b.buf || "{}"); } catch { args = { _raw: b.buf }; }
+          let args: Record<string, unknown> = {}; try { args = JSON.parse(b.buf || "{}"); } catch { args = { _raw: b.buf }; }
           yield { type: "tool_call", toolCall: { id: b.id!, name: b.name!, args } };
         }
       } else if (o.type === "message_stop") break;
@@ -58,9 +58,9 @@ export class AnthropicProvider implements LLMProvider {
     yield { type: "done" };
   }
 
-  private toAnthropic(m: any): any {
+  private toAnthropic(m: any): unknown {
     if (m.role === "assistant" && m.toolCalls?.length) {
-      const content: any[] = [];
+      const content: unknown[] = [];
       if (m.content) content.push({ type: "text", text: m.content });
       for (const tc of m.toolCalls) content.push({ type: "tool_use", id: tc.id, name: tc.name, input: tc.args });
       return { role: "assistant", content };

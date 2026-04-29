@@ -9,7 +9,7 @@ export interface ToolSchema {
 export interface Tool {
   name: string;
   schema: ToolSchema;
-  handler: (args: Record<string, any>) => Promise<string>;
+  handler: (args: Record<string, unknown>) => Promise<string>;
   kind: "read" | "write";
 }
 

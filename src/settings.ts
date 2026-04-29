@@ -56,6 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   providerId: "openai",
   providers: defaultProviders(),
   mode: "ask",
+  // eslint-disable-next-line obsidianmd/hardcoded-config-path -- DEFAULT_SETTINGS is a static constant; Vault.configDir is unavailable here
   chatsFolder: ".obsidian/plugins/smart-note-agent/chats",
   locale: "auto",
   userProfile: "",
@@ -82,7 +83,7 @@ interface LegacySettings {
 
 export function migrateSettings(raw: (Partial<Settings> & LegacySettings) | undefined): Settings {
   const r = raw ?? {};
-  const providerId: ProviderId = (r.providerId ?? DEFAULT_SETTINGS.providerId) as ProviderId;
+  const providerId: ProviderId = (r.providerId ?? DEFAULT_SETTINGS.providerId);
 
   // Start with full default profiles so every provider has a usable entry
   const providers: Record<ProviderId, ProviderProfile> = { ...defaultProviders(), ...(r.providers ?? {}) };

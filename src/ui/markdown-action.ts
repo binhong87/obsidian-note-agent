@@ -22,7 +22,7 @@ export function markdown(node: HTMLElement, params: MarkdownParams) {
       const href = a.getAttribute("href") ?? a.getAttribute("data-href") ?? "";
       if (!href) return;
       const newLeaf = evt.ctrlKey || evt.metaKey || evt.button === 1;
-      currentPlugin.app.workspace.openLinkText(href, "", newLeaf);
+      currentPlugin.app.workspace.openLinkText(href, "", newLeaf).catch(() => {});
     } else if (a.classList.contains("external-link") || /^https?:/i.test(a.getAttribute("href") ?? "")) {
       evt.preventDefault();
       const href = a.getAttribute("href") ?? "";
@@ -45,25 +45,25 @@ export function markdown(node: HTMLElement, params: MarkdownParams) {
     const code = pre.querySelector<HTMLElement>("code");
     const lang = code?.className.match(/language-(\S+)/)?.[1] ?? "";
 
-    const header = document.createElement("div");
+    const header = activeDocument.createDiv();
     header.className = "ob-code-header";
 
-    const langLabel = document.createElement("span");
+    const langLabel = activeDocument.createSpan();
     langLabel.className = "ob-code-lang";
     langLabel.textContent = lang;
 
-    const btn = document.createElement("button");
+    const btn = activeDocument.createEl("button");
     btn.className = "ob-copy-btn";
     btn.textContent = "Copy";
     btn.setAttribute("aria-label", "Copy code");
     btn.addEventListener("click", () => {
       const text = (code ?? pre).textContent ?? "";
       navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = "✓ Copied";
-        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+        btn.textContent = "✓ copied";
+        activeWindow.setTimeout(() => { btn.textContent = "Copy"; }, 2000);
       }).catch(() => {
         btn.textContent = "Failed";
-        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+        activeWindow.setTimeout(() => { btn.textContent = "Copy"; }, 2000);
       });
     });
 
@@ -72,10 +72,10 @@ export function markdown(node: HTMLElement, params: MarkdownParams) {
     pre.insertBefore(header, pre.firstChild);
   }
 
-  render(params);
+  void render(params);
 
   return {
-    update(newParams: MarkdownParams) { render(newParams); },
+    update(newParams: MarkdownParams) { void render(newParams); },
     destroy() { node.removeEventListener("click", onClick); owner.unload(); },
   };
 }

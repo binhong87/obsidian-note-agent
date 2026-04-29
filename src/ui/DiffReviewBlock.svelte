@@ -57,6 +57,7 @@
     <div class="db-header-left">
       <div class="db-tool-icon" aria-hidden="true">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html toolIcon(p.tool)}
         </svg>
       </div>

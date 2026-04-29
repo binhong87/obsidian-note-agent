@@ -1,7 +1,7 @@
 import type { Tool, ToolContext } from "./types";
 
 const safe = async (fn: () => Promise<string>): Promise<string> => {
-  try { return await fn(); } catch (e: any) { return JSON.stringify({ error: String(e?.message ?? e) }); }
+  try { return await fn(); } catch (e: unknown) { return JSON.stringify({ error: e instanceof Error ? e.message : String(e) }); }
 };
 
 export function buildReadTools(ctx: ToolContext): Tool[] {
@@ -22,7 +22,7 @@ export function buildReadTools(ctx: ToolContext): Tool[] {
       name: "list_folder", kind: "read",
       schema: { name: "list_folder", description: "List all file paths under a folder (notes, attachments, canvas, etc.). Pass an empty string to list the vault root.",
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } },
-      handler: (a) => safe(async () => JSON.stringify(await ctx.vault.listFolder(String(a.path ?? "")))),
+      handler: (a) => safe(async () => JSON.stringify(await ctx.vault.listFolder(typeof a.path === "string" ? a.path : ""))),
     },
     {
       name: "get_backlinks", kind: "read",

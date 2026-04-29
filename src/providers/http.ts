@@ -22,8 +22,8 @@ function retryDelayMs(attempt: number, retryAfterHeader: string | null): number 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
-    const t = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("Aborted", "AbortError")); }, { once: true });
+    const t = activeWindow.setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => { activeWindow.clearTimeout(t); reject(new DOMException("Aborted", "AbortError")); }, { once: true });
   });
 }
 
@@ -31,10 +31,10 @@ function parseRateMsg(raw: string): string {
   try { return JSON.parse(raw)?.error?.message ?? raw; } catch { return raw; }
 }
 
-export async function httpJson<T = any>(o: HttpOptions): Promise<T> {
+export async function httpJson<T = unknown>(o: HttpOptions): Promise<T> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const r = await requestUrl({ url: o.url, method: o.method ?? "POST", headers: o.headers, body: o.body, throw: false } as any);
+      const r = await requestUrl({ url: o.url, method: o.method ?? "POST", headers: o.headers, body: o.body, throw: false });
       if (r.status === 429) {
         if (attempt < MAX_RETRIES) {
           const delay = retryDelayMs(attempt + 1, null);
@@ -52,9 +52,9 @@ export async function httpJson<T = any>(o: HttpOptions): Promise<T> {
         throw new ProviderError("unknown", `${r.status}: ${msg}`);
       }
       return r.json as T;
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof ProviderError) throw e;
-      throw new ProviderError("unavailable", String(e?.message ?? e));
+      throw new ProviderError("unavailable", e instanceof Error ? e.message : String(e));
     }
   }
   throw new ProviderError("rate", "Rate limited: max retries exceeded");
@@ -62,6 +62,7 @@ export async function httpJson<T = any>(o: HttpOptions): Promise<T> {
 
 export async function* httpSSE(o: HttpOptions): AsyncIterable<{ data: string }> {
   for (let attempt = 0; ; attempt++) {
+    // eslint-disable-next-line no-restricted-globals -- requestUrl doesn't support streaming; fetch is required for SSE
     const resp = await fetch(o.url, {
       method: o.method ?? "POST",
       headers: o.headers,

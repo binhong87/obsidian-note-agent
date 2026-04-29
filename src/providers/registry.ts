@@ -31,7 +31,7 @@ export function createProvider(id: ProviderId, cfg: ProviderConfig): LLMProvider
       return cfg.compat === "anthropic"
         ? new AnthropicProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl })
         : new OpenAIProvider({ apiKey: cfg.apiKey, baseUrl: cfg.baseUrl });
-    default: throw new Error(`unknown provider: ${id}`);
+    default: throw new Error(`unknown provider: ${id as string}`);
   }
 }
 

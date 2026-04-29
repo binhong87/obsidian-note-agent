@@ -28,7 +28,9 @@
 
   function autoResize() {
     if (!textarea) return;
+    // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- height must be set dynamically based on scrollHeight
     textarea.style.height = "auto";
+    // eslint-disable-next-line obsidianmd/no-static-styles-assignment
     textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 66), 200) + "px";
   }
 

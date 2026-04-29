@@ -15,7 +15,8 @@ export class VaultService {
     const p = validatePath(path);
     const f = this.app.vault.getAbstractFileByPath(p);
     if (!f) throw new Error(`not found: ${p}`);
-    return this.app.vault.read(f as TFile);
+    if (!(f instanceof TFile)) throw new Error(`not a file: ${p}`);
+    return this.app.vault.read(f);
   }
 
   async createNote(path: string, content: string): Promise<void> {
@@ -29,7 +30,8 @@ export class VaultService {
     const p = validatePath(path);
     const f = this.app.vault.getAbstractFileByPath(p);
     if (!f) throw new Error(`not found: ${p}`);
-    await this.app.vault.modify(f as TFile, content);
+    if (!(f instanceof TFile)) throw new Error(`not a file: ${p}`);
+    await this.app.vault.modify(f, content);
   }
 
   async deleteNote(path: string): Promise<void> {

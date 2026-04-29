@@ -12,9 +12,11 @@ export class AgentSettingsTab extends PluginSettingTab {
     const s = this.plugin.settings;
     const t = this.plugin.i18n.t.bind(this.plugin.i18n);
     const wide = (el: HTMLInputElement) => {
+      // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- no CSS infrastructure for TS files; input needs 100% width dynamically
       el.style.width = "100%";
-      const control = el.closest(".setting-item-control") as HTMLElement | null;
-      if (control) { control.style.flex = "0 0 50%"; control.style.minWidth = "0"; }
+      const control = el.closest(".setting-item-control");
+      // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- layout fix for wide inputs in settings panel
+      if (control) { (control as HTMLElement).style.flex = "0 0 50%"; (control as HTMLElement).style.minWidth = "0"; }
     };
 
     // Ensure the active provider has a profile entry
@@ -22,7 +24,7 @@ export class AgentSettingsTab extends PluginSettingTab {
     const profile = s.providers[s.providerId];
     const defaults = PROVIDER_DEFAULTS[s.providerId];
 
-    containerEl.createEl("h2", { text: t("settings.title") });
+    new Setting(containerEl).setName("").setHeading();
 
     new Setting(containerEl).setName(t("settings.provider")).addDropdown(d => {
       for (const id of listProviderIds()) d.addOption(id, t(`provider.${id}`));
@@ -92,12 +94,15 @@ export class AgentSettingsTab extends PluginSettingTab {
           await this.plugin.reopenChatView();
         }));
 
-    containerEl.createEl("h3", { text: t("settings.userProfile") });
+    new Setting(containerEl).setName("").setHeading();
     new Setting(containerEl)
       .setDesc(t("settings.userProfile.desc"))
       .addTextArea(x => {
+        // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- no CSS infrastructure for TS files; textarea dimensions required
         x.inputEl.style.width = "100%";
+        // eslint-disable-next-line obsidianmd/no-static-styles-assignment
         x.inputEl.style.minHeight = "96px";
+        // eslint-disable-next-line obsidianmd/no-static-styles-assignment
         x.inputEl.style.resize = "vertical";
         x.setPlaceholder(t("settings.userProfile.placeholder"))
           .setValue(s.userProfile)

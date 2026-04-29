@@ -47,7 +47,8 @@ export class ApprovalQueue {
         await this.commit(pw);
       } catch (e) {
         console.error(`[agent] failed to commit ${pw.tool}:`, e);
-        const label = String(pw.args?.path ?? pw.args?.from ?? pw.tool);
+        const raw = pw.args?.path ?? pw.args?.from ?? pw.tool;
+        const label = typeof raw === "string" ? raw : pw.tool;
         failed.push(label);
       }
     }

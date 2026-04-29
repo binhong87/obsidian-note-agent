@@ -1,6 +1,6 @@
 {
   "name": "smart-note-agent",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit && node esbuild.config.mjs production",
+    "lint": "eslint src/",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },
@@ -16,13 +17,13 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^20.19.39",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
     "esbuild": "^0.20.2",
     "esbuild-svelte": "^0.8.2",
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.2.8",
     "eslint-plugin-svelte": "^2.46.1",
     "obsidian": "^1.12.3",
     "prettier": "^3.8.3",
@@ -30,6 +31,7 @@
     "svelte-preprocess": "^5.1.4",
     "tslib": "^2.8.1",
     "typescript": "5.4",
+    "typescript-eslint": "^8.59.1",
     "vitest": "^1.6.1"
   }
 }

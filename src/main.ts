@@ -102,7 +102,8 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
         return { path: f.path, content: "" };
       },
       selection: () => {
-        const ed = (this.app.workspace as any).activeEditor?.editor;
+        type WS = { activeEditor?: { editor?: { getSelection?(): string } } };
+        const ed = (this.app.workspace as unknown as WS).activeEditor?.editor;
         return ed?.getSelection?.() ?? "";
       },
     };
@@ -164,39 +165,39 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
     }
   }
 
-  private async computeDiff(p: { tool: string; args: any }): Promise<string> {
+  private async computeDiff(p: { tool: string; args: Record<string, unknown> }): Promise<string> {
     try {
       if (p.tool === "edit_note") {
-        const before = await this.vault.readNote(p.args.path);
-        return simpleDiff(before, p.args.content);
+        const before = await this.vault.readNote(String(p.args.path));
+        return simpleDiff(before, String(p.args.content));
       }
-      if (p.tool === "create_note") return `+ ${p.args.path}\n${p.args.content}`;
-      if (p.tool === "delete_note") return `- ${p.args.path}`;
-      if (p.tool === "move_note") return `${p.args.from} → ${p.args.to}`;
-      if (p.tool === "apply_patch") return p.args.patch;
-    } catch {}
+      if (p.tool === "create_note") return `+ ${String(p.args.path)}\n${String(p.args.content)}`;
+      if (p.tool === "delete_note") return `- ${String(p.args.path)}`;
+      if (p.tool === "move_note") return `${String(p.args.from)} → ${String(p.args.to)}`;
+      if (p.tool === "apply_patch") return String(p.args.patch);
+    } catch { /* ignore — fall through to return "" */ }
     return "";
   }
 
-  private async commitWrite(p: { tool: string; args: any }): Promise<void> {
+  private async commitWrite(p: { tool: string; args: Record<string, unknown> }): Promise<void> {
     switch (p.tool) {
-      case "create_note": await this.vault.createNote(p.args.path, p.args.content); this.lastTurnSummary.created.push(p.args.path); break;
-      case "edit_note": await this.vault.editNote(p.args.path, p.args.content); this.lastTurnSummary.edited.push(p.args.path); break;
+      case "create_note": await this.vault.createNote(String(p.args.path), String(p.args.content)); this.lastTurnSummary.created.push(String(p.args.path)); break;
+      case "edit_note": await this.vault.editNote(String(p.args.path), String(p.args.content)); this.lastTurnSummary.edited.push(String(p.args.path)); break;
       case "apply_patch": {
-        const before = await this.vault.readNote(p.args.path);
-        await this.vault.editNote(p.args.path, applyUnifiedPatch(before, p.args.patch));
-        this.lastTurnSummary.edited.push(p.args.path); break;
+        const before = await this.vault.readNote(String(p.args.path));
+        await this.vault.editNote(String(p.args.path), applyUnifiedPatch(before, String(p.args.patch)));
+        this.lastTurnSummary.edited.push(String(p.args.path)); break;
       }
-      case "delete_note": await this.vault.deleteNote(p.args.path); this.lastTurnSummary.deleted.push(p.args.path); break;
-      case "move_note": await this.vault.moveNote(p.args.from, p.args.to); this.lastTurnSummary.edited.push(p.args.to); break;
+      case "delete_note": await this.vault.deleteNote(String(p.args.path)); this.lastTurnSummary.deleted.push(String(p.args.path)); break;
+      case "move_note": await this.vault.moveNote(String(p.args.from), String(p.args.to)); this.lastTurnSummary.edited.push(String(p.args.to)); break;
     }
     this.emitSummary();
   }
 
-  private async autoApproveAndBackup(p: { tool: string; args: any }): Promise<void> {
+  private async autoApproveAndBackup(p: { tool: string; args: Record<string, unknown> }): Promise<void> {
     const backupTools = ["edit_note", "delete_note", "apply_patch"];
     if (backupTools.includes(p.tool)) {
-      const path = p.args.path as string;
+      const path = String(p.args.path);
       const ts = autoBackupTimestamp();
       const backupPath = `__auto_backup__/${ts}/${path}`;
       try {
@@ -256,7 +257,7 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
   async activateView() {
     let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_AGENT_CHAT)[0];
     if (!leaf) { leaf = this.app.workspace.getRightLeaf(false)!; await leaf.setViewState({ type: VIEW_TYPE_AGENT_CHAT, active: true }); }
-    this.app.workspace.revealLeaf(leaf);
+    void this.app.workspace.revealLeaf(leaf);
   }
 
   /** Detach + reopen the chat view so Svelte components re-render with the current locale. */

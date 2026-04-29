@@ -40,10 +40,10 @@ export class SchedulerService {
   constructor(private getSettings: () => Settings, private runner: ScheduledTaskRunner) {}
 
   start() {
-    this.tick();
-    this.timer = window.setInterval(() => this.tick(), 60_000);
+    void this.tick();
+    this.timer = window.setInterval(() => { void this.tick(); }, 60_000);
   }
-  stop() { if (this.timer !== null) { clearInterval(this.timer); this.timer = null; } }
+  stop() { if (this.timer !== null) { activeWindow.clearInterval(this.timer); this.timer = null; } }
 
   private async tick() {
     const s = this.getSettings();

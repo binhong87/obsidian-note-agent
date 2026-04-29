@@ -30,7 +30,8 @@ export class OllamaProvider implements LLMProvider {
     yield { type: "done" };
   }
 
-  private async *fetchNDJSON(url: string, body: any, signal?: AbortSignal): AsyncIterable<string> {
+  private async *fetchNDJSON(url: string, body: unknown, signal?: AbortSignal): AsyncIterable<string> {
+    // eslint-disable-next-line no-restricted-globals -- requestUrl doesn't support streaming; fetch is required for NDJSON
     const resp = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
     if (resp.status >= 400) throw new ProviderError(resp.status >= 500 ? "unavailable" : "unknown", await resp.text());
     const reader = resp.body!.getReader(); const dec = new TextDecoder(); let buf = "";
@@ -43,7 +44,7 @@ export class OllamaProvider implements LLMProvider {
     if (buf.trim()) yield buf;
   }
 
-  private toOllama(m: any): any {
+  private toOllama(m: any): unknown {
     if (m.role === "tool") return { role: "tool", content: m.content };
     if (m.role === "assistant" && m.toolCalls?.length) {
       return { role: "assistant", content: m.content || "",
