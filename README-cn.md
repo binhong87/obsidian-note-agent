@@ -22,11 +22,11 @@
 
 ## 安装
 
-### 通过 BRAT（推荐，适合预发布版本）
+### 社区插件（推荐）
 
-1. 安装社区插件 [BRAT](https://github.com/TfTHacker/obsidian42-brat)
-2. 在 BRAT 设置中添加：`Bin-Home/obsidian-note-agent`
-3. 在**设置 → 第三方插件**中启用该插件
+1. 打开**设置 → 第三方插件**，如有提示请关闭安全模式
+2. 点击**浏览**，搜索 `Smart Note Agent`
+3. 点击**安装**，然后点击**启用**
 
 ### 手动安装
 

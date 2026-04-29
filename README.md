@@ -22,11 +22,11 @@ An agentic AI assistant plugin for [Obsidian](https://obsidian.md) that can read
 
 ## Installation
 
-### Via BRAT (recommended for pre-release)
+### Community plugins (recommended)
 
-1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) community plugin
-2. In BRAT settings, add: `Bin-Home/obsidian-note-agent`
-3. Enable the plugin in **Settings → Community plugins**
+1. Open **Settings → Community plugins** and disable Safe mode if prompted
+2. Click **Browse** and search for `Smart Note Agent`
+3. Click **Install**, then **Enable**
 
 ### Manual
 
