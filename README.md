@@ -64,6 +64,33 @@ An agentic AI assistant plugin for [Obsidian](https://obsidian.md) that can read
 | Ollama | Local models — Llama, Mistral, Qwen, etc. |
 | Custom | Any OpenAI-compatible or Anthropic-compatible endpoint |
 
+## Disclosures
+
+### Account required
+
+Using a remote LLM provider (OpenAI, Anthropic, DeepSeek, Qwen, Kimi, Zhipu, Z.ai, MiniMax, OpenRouter) requires an account with that provider and a valid API key. Local providers (Ollama, LM Studio) and custom self-hosted endpoints require no account.
+
+### Payment may be required
+
+Remote LLM providers charge for API usage. You are billed directly by the provider you choose — this plugin has no subscription or in-app purchase of its own. Local providers (Ollama, LM Studio) are free.
+
+### Network use
+
+When you send a message, the plugin transmits your message text and relevant vault context to the LLM provider you have configured. No data is sent to any service by default — the plugin is inert until you supply an API key and send a message. The following remote services may be contacted, depending on your provider selection:
+
+| Provider | Endpoint |
+|---|---|
+| OpenAI | `https://api.openai.com` |
+| Anthropic | `https://api.anthropic.com` |
+| DeepSeek | `https://api.deepseek.com` |
+| Qwen (Alibaba Cloud) | `https://dashscope.aliyuncs.com` |
+| Kimi (Moonshot AI) | `https://api.moonshot.cn` |
+| Zhipu / Z.ai | `https://open.bigmodel.cn`, `https://open.z.ai` |
+| MiniMax | `https://api.minimax.chat` |
+| OpenRouter | `https://openrouter.ai` |
+
+Ollama and LM Studio communicate only with `localhost` — no data leaves your machine.
+
 ## Development
 
 ```bash

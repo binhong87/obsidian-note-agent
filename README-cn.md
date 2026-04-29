@@ -64,6 +64,33 @@
 | Ollama | 本地模型（Llama、Mistral、Qwen 等） |
 | 自定义 | 任意 OpenAI 兼容或 Anthropic 兼容端点 |
 
+## 披露说明
+
+### 需要账号
+
+使用远程 LLM 服务提供商（OpenAI、Anthropic、DeepSeek、通义千问、Kimi、智谱、Z.ai、MiniMax、OpenRouter）需要在该提供商处注册账号并获取有效的 API Key。本地服务提供商（Ollama、LM Studio）及自定义自托管端点无需账号。
+
+### 可能需要付费
+
+远程 LLM 服务提供商按 API 用量收费，费用由您直接向所选提供商支付——本插件本身不设订阅费或应用内购买。本地服务提供商（Ollama、LM Studio）免费使用。
+
+### 网络请求
+
+当您发送消息时，插件会将您的消息文本及相关笔记库内容发送至您所配置的 LLM 服务提供商。在您提供 API Key 并发送消息之前，插件不会向任何服务发送任何数据。根据您选择的服务提供商，可能会访问以下远程服务：
+
+| 服务提供商 | 接口地址 |
+|---|---|
+| OpenAI | `https://api.openai.com` |
+| Anthropic | `https://api.anthropic.com` |
+| DeepSeek | `https://api.deepseek.com` |
+| 通义千问（阿里云） | `https://dashscope.aliyuncs.com` |
+| Kimi（月之暗面） | `https://api.moonshot.cn` |
+| 智谱 / Z.ai | `https://open.bigmodel.cn`、`https://open.z.ai` |
+| MiniMax | `https://api.minimax.chat` |
+| OpenRouter | `https://openrouter.ai` |
+
+Ollama 和 LM Studio 仅与 `localhost` 通信，数据不会离开您的设备。
+
 ## 开发
 
 ```bash
