@@ -39,7 +39,7 @@ export class AgentSettingsTab extends PluginSettingTab {
         .setName(t("settings.provider.compat"))
         .setDesc(t("settings.provider.compat.desc"))
         .addDropdown(d => {
-          d.addOption("openai", "OpenAI").addOption("anthropic", "Anthropic");
+          d.addOption("openai", t("provider.openai")).addOption("anthropic", t("provider.anthropic"));
           d.setValue(profile.compat ?? "openai").onChange(async v => {
             profile.compat = v as "openai" | "anthropic";
             await this.plugin.saveSettings();
