@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Notice } from "obsidian";
   import type ObsidianNoteAgentPlugin from "../main";
-  export let p: any;
+  import type { PendingWrite } from "../agent/approval-queue";
+  export let p: PendingWrite;
   export let plugin: ObsidianNoteAgentPlugin;
 
   const t = (k: string) => plugin.i18n.t(k);

@@ -28,9 +28,7 @@
 
   function autoResize() {
     if (!textarea) return;
-    // eslint-disable-next-line obsidianmd/no-static-styles-assignment -- height must be set dynamically based on scrollHeight
-    textarea.style.height = "auto";
-    // eslint-disable-next-line obsidianmd/no-static-styles-assignment
+    textarea.style.height = `auto`;
     textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 66), 200) + "px";
   }
 
@@ -51,13 +49,13 @@
     try {
       for await (const evt of plugin.sendMessage(text)) {
         if (evt.type === "text") {
-          streamBuf += (evt as any).text;
+          streamBuf += (evt as { type: string; text: string }).text;
           // Don't sync messages here — streamBuf drives the live streaming view
         } else if (["tool","pending","done","stopped"].includes(evt.type)) {
           messages = [...plugin.currentConversation.messages];
           streamBuf = "";
         } else if (evt.type === "error") {
-          errorMsg = `⚠ ${(evt as any).error?.message ?? "Unknown error"}`;
+          errorMsg = `⚠ ${(evt as { type: string; error?: { message?: string } }).error?.message ?? "Unknown error"}`;
         }
         await tick();
       }
@@ -86,14 +84,15 @@
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
-  const t = (k: string, v?: any) => plugin.i18n.t(k, v);
+  const t = (k: string, v?: Record<string, string | number>) => plugin.i18n.t(k, v);
 
   function openSettings() {
-    const setting = (plugin.app as any).setting;
-    if (setting?.open) {
-      setting.open();
-      setting.openTabById?.(plugin.manifest.id);
-    }
+    const s = (plugin.app as Record<string, unknown>).setting as Record<string, unknown> | undefined;
+    if (!s) return;
+    const openFn = s["open"];
+    const openByIdFn = s["openTabById"];
+    if (typeof openFn === "function") openFn();
+    if (typeof openByIdFn === "function") openByIdFn(plugin.manifest.id);
   }
   $: providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)}:${activeProfile(plugin.settings).model}`);
   $: charCount = input.length;

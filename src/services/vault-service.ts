@@ -49,7 +49,7 @@ export class VaultService {
     await this.app.vault.rename(f, b);
   }
 
-  async listFolder(path: string): Promise<string[]> {
+  listFolder(path: string): string[] {
     const p = path === "" ? "" : validatePath(path);
     return this.app.vault.getFiles()
       .map(f => f.path)
@@ -69,7 +69,8 @@ export class VaultService {
   }
 
   getBacklinks(path: string): string[] {
-    const cache = (this.app as any).metadataCache;
+    type AppWithMeta = typeof this.app & { metadataCache?: { resolvedLinks?: Record<string, Record<string, number>> } };
+    const cache = (this.app as AppWithMeta).metadataCache;
     const rec = cache?.resolvedLinks ?? {};
     const out: string[] = [];
     for (const src of Object.keys(rec)) if (rec[src][path]) out.push(src);
@@ -77,7 +78,8 @@ export class VaultService {
   }
 
   getOutgoingLinks(path: string): string[] {
-    const cache = (this.app as any).metadataCache;
+    type AppWithMeta = typeof this.app & { metadataCache?: { resolvedLinks?: Record<string, Record<string, number>> } };
+    const cache = (this.app as AppWithMeta).metadataCache;
     const rec = cache?.resolvedLinks?.[path] ?? {};
     return Object.keys(rec);
   }
@@ -86,7 +88,8 @@ export class VaultService {
     const parent = p.split("/").slice(0, -1).join("/");
     if (!parent) return;
     if (!this.app.vault.getAbstractFileByPath(parent)) {
-      await (this.app.vault as any).createFolder?.(parent);
+      type VaultWithFolder = typeof this.app.vault & { createFolder?: (path: string) => Promise<void> };
+      await (this.app.vault as VaultWithFolder).createFolder?.(parent);
     }
   }
 }

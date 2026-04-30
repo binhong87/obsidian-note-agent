@@ -5,7 +5,7 @@
   let summary = plugin.lastTurnSummary;
   plugin.onSummaryChange(s => (summary = s));
 
-  const t = (k: string, v?: any) => plugin.i18n.t(k, v);
+  const t = (k: string, v?: Record<string, string | number>) => plugin.i18n.t(k, v);
 
   $: total = (summary?.created.length ?? 0) + (summary?.edited.length ?? 0) + (summary?.deleted.length ?? 0);
 </script>

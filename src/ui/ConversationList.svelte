@@ -49,7 +49,7 @@
     return `${y}-${mo}-${dy}`;
   }
 
-  const t = (k: string, v?: any) => plugin.i18n.t(k, v);
+  const t = (k: string, v?: Record<string, string | number>) => plugin.i18n.t(k, v);
 
   // Sentinel group keys — resolved to localized strings at render time
   const GROUP_TODAY = "__today__";

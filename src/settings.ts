@@ -56,8 +56,7 @@ export const DEFAULT_SETTINGS: Settings = {
   providerId: "openai",
   providers: defaultProviders(),
   mode: "ask",
-  // eslint-disable-next-line obsidianmd/hardcoded-config-path -- DEFAULT_SETTINGS is a static constant; Vault.configDir is unavailable here
-  chatsFolder: ".obsidian/plugins/smart-note-agent/chats",
+  chatsFolder: "smart-note-agent/chats",
   locale: "auto",
   userProfile: "",
   historyRetentionDays: 30,
@@ -99,10 +98,10 @@ export function migrateSettings(raw: (Partial<Settings> & LegacySettings) | unde
     };
   }
 
-  const { apiKey: _a, baseUrl: _b, model: _m, providers: _p, scheduled: _s, ...rest } = r as any;
+  const { apiKey: _a, baseUrl: _b, model: _m, providers: _p, scheduled: _s, ...rest } = r;
 
-  // Migrate old default chats folder to the new internal location
-  if (rest.chatsFolder === "_agent/chats") delete rest.chatsFolder;
+  // Migrate old default chats folder paths to the new vault-root location
+  if (rest.chatsFolder === "_agent/chats" || /^\.obsidian\//.test(rest.chatsFolder ?? "")) delete rest.chatsFolder;
 
   return {
     ...DEFAULT_SETTINGS,

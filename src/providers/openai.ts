@@ -1,8 +1,9 @@
-import type { ChatRequest, Delta, LLMProvider } from "./types";
+import type { ChatRequest, Delta, LLMProvider, Message, ToolCall } from "./types";
 import { httpSSE } from "./http";
+import type { HttpOptions } from "./http";
 
 export interface OpenAIConfig { apiKey: string; baseUrl?: string; }
-type SSEIter = (o: any) => AsyncIterable<{ data: string }>;
+type SSEIter = (o: HttpOptions) => AsyncIterable<{ data: string }>;
 
 export class OpenAIProvider implements LLMProvider {
   id = "openai";
@@ -25,7 +26,10 @@ export class OpenAIProvider implements LLMProvider {
     const pending: Record<number, { id?: string; name: string; args: string }> = {};
     for await (const ev of iter) {
       if (ev.data === "[DONE]") break;
-      let obj: any; try { obj = JSON.parse(ev.data); } catch { continue; }
+      interface OpenAIChunk {
+        choices?: Array<{ delta?: { reasoning_content?: string; content?: string; tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }> } }>;
+      }
+      let obj: OpenAIChunk; try { obj = JSON.parse(ev.data) as OpenAIChunk; } catch { continue; }
       const delta = obj.choices?.[0]?.delta;
       if (!delta) continue;
       if (delta.reasoning_content) yield { type: "reasoning", text: delta.reasoning_content };
@@ -46,12 +50,12 @@ export class OpenAIProvider implements LLMProvider {
     yield { type: "done" };
   }
 
-  private toOpenAIMsg(m: any): unknown {
+  private toOpenAIMsg(m: Message): unknown {
     if (m.role === "tool") return { role: "tool", tool_call_id: m.toolCallId, content: m.content };
     if (m.role === "assistant" && m.toolCalls?.length) {
       return { role: "assistant", content: m.content || null,
         reasoning_content: m.reasoningContent || undefined,
-        tool_calls: m.toolCalls.map((tc: any) => ({ id: tc.id, type: "function",
+        tool_calls: m.toolCalls.map((tc: ToolCall) => ({ id: tc.id, type: "function",
           function: { name: tc.name, arguments: JSON.stringify(tc.args) } })) };
     }
     if (m.role === "assistant" && m.reasoningContent) {

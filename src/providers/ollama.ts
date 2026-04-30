@@ -1,4 +1,4 @@
-import type { ChatRequest, Delta, LLMProvider } from "./types";
+import type { ChatRequest, Delta, LLMProvider, Message, ToolCall } from "./types";
 import { ProviderError } from "./types";
 
 export interface OllamaConfig { baseUrl: string; }
@@ -20,7 +20,11 @@ export class OllamaProvider implements LLMProvider {
     let counter = 0;
     for await (const line of iter) {
       const trimmed = line.trim(); if (!trimmed) continue;
-      let o: any; try { o = JSON.parse(trimmed); } catch { continue; }
+      interface OllamaChunk {
+        message?: { content?: string; tool_calls?: Array<{ function: { name: string; arguments?: Record<string, unknown> } }> };
+        done?: boolean;
+      }
+      let o: OllamaChunk; try { o = JSON.parse(trimmed) as OllamaChunk; } catch { continue; }
       if (o.message?.content) yield { type: "text", text: o.message.content };
       for (const tc of o.message?.tool_calls ?? []) {
         yield { type: "tool_call", toolCall: { id: `tc_${counter++}`, name: tc.function.name, args: tc.function.arguments ?? {} } };
@@ -31,8 +35,7 @@ export class OllamaProvider implements LLMProvider {
   }
 
   private async *fetchNDJSON(url: string, body: unknown, signal?: AbortSignal): AsyncIterable<string> {
-    // eslint-disable-next-line no-restricted-globals -- requestUrl doesn't support streaming; fetch is required for NDJSON
-    const resp = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
+    const resp = await window.fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
     if (resp.status >= 400) throw new ProviderError(resp.status >= 500 ? "unavailable" : "unknown", await resp.text());
     const reader = resp.body!.getReader(); const dec = new TextDecoder(); let buf = "";
     while (true) {
@@ -44,11 +47,11 @@ export class OllamaProvider implements LLMProvider {
     if (buf.trim()) yield buf;
   }
 
-  private toOllama(m: any): unknown {
+  private toOllama(m: Message): unknown {
     if (m.role === "tool") return { role: "tool", content: m.content };
     if (m.role === "assistant" && m.toolCalls?.length) {
       return { role: "assistant", content: m.content || "",
-        tool_calls: m.toolCalls.map((tc: any) => ({ function: { name: tc.name, arguments: tc.args } })) };
+        tool_calls: m.toolCalls.map((tc: ToolCall) => ({ function: { name: tc.name, arguments: tc.args } })) };
     }
     return { role: m.role, content: m.content };
   }

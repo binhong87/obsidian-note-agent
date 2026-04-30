@@ -74,7 +74,7 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
     });
   }
 
-  async startNewConversation() { this.approvalQueue.clear(); this.currentConversation = this.newConversation(); }
+  startNewConversation() { this.approvalQueue.clear(); this.currentConversation = this.newConversation(); }
   async openConversation(path: string) { this.currentConversation = await this.conversations.load(path); }
 
   cancelCurrentTurn() { this.currentLoop?.cancel(); }
@@ -212,7 +212,7 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
     await this.commitWrite(p);
   }
 
-  private async runScheduled(kind: "daily" | "weekly", cfg: any): Promise<void> {
+  private async runScheduled(kind: "daily" | "weekly", cfg: { targetFolder: string }): Promise<void> {
     const prof = activeProfile(this.settings);
     const provider = createProvider(this.settings.providerId, { apiKey: prof.apiKey, baseUrl: prof.baseUrl, compat: prof.compat });
     const conv = new Conversation({ id: `sched_${kind}_${Date.now()}`, mode: "scheduled", provider: this.settings.providerId, model: prof.model });

@@ -10,9 +10,10 @@ export class AgentChatView extends ItemView {
   getViewType() { return VIEW_TYPE_AGENT_CHAT; }
   getDisplayText() { return "Agent"; }
   getIcon() { return "bot"; }
-  async onOpen() {
+  onOpen(): Promise<void> {
     this.contentEl.empty();
     this.component = new ChatView({ target: this.contentEl, props: { plugin: this.plugin } });
+    return Promise.resolve();
   }
-  async onClose() { this.component?.$destroy(); this.component = null; }
+  onClose(): Promise<void> { this.component?.$destroy(); this.component = null; return Promise.resolve(); }
 }

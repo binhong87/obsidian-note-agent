@@ -5,10 +5,12 @@
   import ChangeSummary from "./ChangeSummary.svelte";
   import { markdown } from "./markdown-action";
   import type ObsidianNoteAgentPlugin from "../main";
+  import type { Message } from "../types";
+  import type { PendingWrite } from "../agent/approval-queue";
 
-  export let messages: any[];
+  export let messages: Message[];
   export let streamBuf: string;
-  export let pending: any[];
+  export let pending: PendingWrite[];
   export let plugin: ObsidianNoteAgentPlugin;
   export let busy: boolean = false;
   export let compacting: boolean = false;
@@ -31,8 +33,8 @@
   // Build a lookup from toolCallId → ToolCall so tool result rows can show the tool name + args
   $: toolCallMap = new Map<string, { name: string; args: Record<string, unknown> }>(
     messages
-      .filter((m: any) => m.role === "assistant" && m.toolCalls?.length)
-      .flatMap((m: any) => m.toolCalls.map((tc: any) => [tc.id, tc]))
+      .filter((m: Message) => m.role === "assistant" && m.toolCalls?.length)
+      .flatMap((m: Message) => (m.toolCalls ?? []).map(tc => [tc.id, tc]))
   );
 
   function firstArgHint(args: Record<string, unknown>): string {

@@ -1,6 +1,6 @@
 import type { Tool, ToolContext } from "./types";
 
-const safe = async (fn: () => Promise<string>): Promise<string> => {
+const safe = async (fn: () => string | Promise<string>): Promise<string> => {
   try { return await fn(); } catch (e: unknown) { return JSON.stringify({ error: e instanceof Error ? e.message : String(e) }); }
 };
 
@@ -22,29 +22,29 @@ export function buildReadTools(ctx: ToolContext): Tool[] {
       name: "list_folder", kind: "read",
       schema: { name: "list_folder", description: "List all file paths under a folder (notes, attachments, canvas, etc.). Pass an empty string to list the vault root.",
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } },
-      handler: (a) => safe(async () => JSON.stringify(await ctx.vault.listFolder(typeof a.path === "string" ? a.path : ""))),
+      handler: (a) => safe(() => JSON.stringify(ctx.vault.listFolder(typeof a.path === "string" ? a.path : ""))),
     },
     {
       name: "get_backlinks", kind: "read",
       schema: { name: "get_backlinks", description: "Notes that link to the given path.",
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } },
-      handler: (a) => safe(async () => JSON.stringify(ctx.vault.getBacklinks(String(a.path)))),
+      handler: (a) => safe(() => JSON.stringify(ctx.vault.getBacklinks(String(a.path)))),
     },
     {
       name: "get_outgoing_links", kind: "read",
       schema: { name: "get_outgoing_links", description: "Notes linked from the given path.",
         parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] } },
-      handler: (a) => safe(async () => JSON.stringify(ctx.vault.getOutgoingLinks(String(a.path)))),
+      handler: (a) => safe(() => JSON.stringify(ctx.vault.getOutgoingLinks(String(a.path)))),
     },
     {
       name: "get_active_note", kind: "read",
       schema: { name: "get_active_note", description: "Current note in the editor.", parameters: { type: "object", properties: {} } },
-      handler: () => safe(async () => JSON.stringify(ctx.activeFile())),
+      handler: () => safe(() => JSON.stringify(ctx.activeFile())),
     },
     {
       name: "get_selection", kind: "read",
       schema: { name: "get_selection", description: "Currently selected text.", parameters: { type: "object", properties: {} } },
-      handler: () => safe(async () => ctx.selection()),
+      handler: () => safe(() => ctx.selection()),
     },
   ];
 }

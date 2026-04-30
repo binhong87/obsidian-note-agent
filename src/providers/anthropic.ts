@@ -1,9 +1,10 @@
-import type { ChatRequest, Delta, LLMProvider } from "./types";
+import type { ChatRequest, Delta, LLMProvider, Message } from "./types";
 import { httpSSE } from "./http";
+import type { HttpOptions } from "./http";
 import { lookupModelCaps } from "./model-caps";
 
 export interface AnthropicConfig { apiKey: string; baseUrl?: string; }
-type SSEIter = (o: any) => AsyncIterable<{ data: string }>;
+type SSEIter = (o: HttpOptions) => AsyncIterable<{ data: string }>;
 
 export class AnthropicProvider implements LLMProvider {
   id = "anthropic";
@@ -40,14 +41,20 @@ export class AnthropicProvider implements LLMProvider {
     });
     const blocks: Record<number, { type: string; name?: string; id?: string; buf: string }> = {};
     for await (const ev of iter) {
-      let o: any; try { o = JSON.parse(ev.data); } catch { continue; }
-      if (o.type === "content_block_start") {
+      interface AnthropicEvent {
+        type?: string;
+        index?: number;
+        content_block?: { type: string; name?: string; id?: string };
+        delta?: { type: string; text?: string; partial_json?: string };
+      }
+      let o: AnthropicEvent; try { o = JSON.parse(ev.data) as AnthropicEvent; } catch { continue; }
+      if (o.type === "content_block_start" && o.index !== undefined && o.content_block) {
         blocks[o.index] = { type: o.content_block.type, name: o.content_block.name, id: o.content_block.id, buf: "" };
-      } else if (o.type === "content_block_delta") {
+      } else if (o.type === "content_block_delta" && o.index !== undefined) {
         const b = blocks[o.index]; if (!b) continue;
-        if (o.delta.type === "text_delta") yield { type: "text", text: o.delta.text };
-        else if (o.delta.type === "input_json_delta") b.buf += o.delta.partial_json;
-      } else if (o.type === "content_block_stop") {
+        if (o.delta?.type === "text_delta") yield { type: "text", text: o.delta.text ?? "" };
+        else if (o.delta?.type === "input_json_delta") b.buf += o.delta.partial_json ?? "";
+      } else if (o.type === "content_block_stop" && o.index !== undefined) {
         const b = blocks[o.index];
         if (b?.type === "tool_use") {
           let args: Record<string, unknown> = {}; try { args = JSON.parse(b.buf || "{}"); } catch { args = { _raw: b.buf }; }
@@ -58,7 +65,7 @@ export class AnthropicProvider implements LLMProvider {
     yield { type: "done" };
   }
 
-  private toAnthropic(m: any): unknown {
+  private toAnthropic(m: Message): unknown {
     if (m.role === "assistant" && m.toolCalls?.length) {
       const content: unknown[] = [];
       if (m.content) content.push({ type: "text", text: m.content });

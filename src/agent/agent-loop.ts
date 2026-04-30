@@ -71,7 +71,7 @@ export class AgentLoop {
           else if (d.type === "error") { console.error("[agent] provider error:", d.error); yield { type: "error", error: d.error }; stoppedEarly = true; break; }
           else if (d.type === "done") break;
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (this.abort.signal.aborted) {
           yield { type: "stopped", reason: "cancelled" };
           return;
@@ -81,7 +81,8 @@ export class AgentLoop {
           return;
         }
         console.error("[agent] chat exception:", e);
-        yield { type: "error", error: { kind: e.kind ?? "unknown", message: String(e.message ?? e) } };
+        const err = e as { kind?: string; message?: string };
+        yield { type: "error", error: { kind: err.kind ?? "unknown", message: String(err.message ?? e) } };
         return;
       } finally {
         activeWindow.clearTimeout(timer);

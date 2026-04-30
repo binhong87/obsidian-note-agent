@@ -92,7 +92,7 @@ export function parseConversation(md: string): Conversation {
 
   const conv = new Conversation({
     id: fm.id, title: fm.title || undefined, createdAt: Number(fm.createdAt),
-    mode: fm.mode as any, provider: fm.provider as any, model: fm.model,
+    mode: fm.mode as Mode, provider: fm.provider as ProviderId, model: fm.model,
   }, messages);
 
   if (summary !== undefined) conv.summary = summary;

@@ -62,8 +62,7 @@ export async function httpJson<T = unknown>(o: HttpOptions): Promise<T> {
 
 export async function* httpSSE(o: HttpOptions): AsyncIterable<{ data: string }> {
   for (let attempt = 0; ; attempt++) {
-    // eslint-disable-next-line no-restricted-globals -- requestUrl doesn't support streaming; fetch is required for SSE
-    const resp = await fetch(o.url, {
+    const resp = await window.fetch(o.url, {
       method: o.method ?? "POST",
       headers: o.headers,
       body: o.body,
