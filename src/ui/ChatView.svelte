@@ -91,8 +91,8 @@
     if (!s) return;
     const openFn = s["open"];
     const openByIdFn = s["openTabById"];
-    if (typeof openFn === "function") openFn();
-    if (typeof openByIdFn === "function") openByIdFn(plugin.manifest.id);
+    if (typeof openFn === "function") Reflect.apply(openFn, s, []);
+    if (typeof openByIdFn === "function") Reflect.apply(openByIdFn, s, [plugin.manifest.id]);
   }
   $: providerLabel = (settingsTick, `${plugin.i18n.t(`provider.${plugin.settings.providerId}`)}:${activeProfile(plugin.settings).model}`);
   $: charCount = input.length;
