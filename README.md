@@ -59,9 +59,11 @@ An agentic AI assistant plugin for [Obsidian](https://obsidian.md) that can read
 | Qwen | Alibaba Cloud Dashscope (qwen-plus, qwen-max, etc.) |
 | Kimi | Moonshot AI (moonshot-v1 series) |
 | Zhipu | GLM-4 series |
+| Z.ai | GLM-4 series via Z.ai |
 | MiniMax | MiniMax-Text series |
 | OpenRouter | Any model via openrouter.ai |
 | Ollama | Local models — Llama, Mistral, Qwen, etc. |
+| LM Studio | Local models via LM Studio |
 | Custom | Any OpenAI-compatible or Anthropic-compatible endpoint |
 
 ## Disclosures
@@ -85,11 +87,24 @@ When you send a message, the plugin transmits your message text and relevant vau
 | DeepSeek | `https://api.deepseek.com` |
 | Qwen (Alibaba Cloud) | `https://dashscope.aliyuncs.com` |
 | Kimi (Moonshot AI) | `https://api.moonshot.cn` |
-| Zhipu / Z.ai | `https://open.bigmodel.cn`, `https://open.z.ai` |
+| Zhipu | `https://open.bigmodel.cn` |
+| Z.ai | `https://open.z.ai` |
 | MiniMax | `https://api.minimax.chat` |
 | OpenRouter | `https://openrouter.ai` |
 
-Ollama and LM Studio communicate only with `localhost` — no data leaves your machine.
+Ollama and LM Studio communicate only with `localhost` — no data leaves your machine. The Custom provider connects to whatever endpoint you configure.
+
+### Vault access
+
+This plugin reads, writes, and enumerates vault files in order to operate:
+
+- **Read** — notes are read to answer questions, provide context to the LLM, and compute diffs before edits.
+- **Enumerate** — `list_folder` and `search_vault` tools scan all files (or all Markdown files) in the vault to find matches. Only file paths and content relevant to the query are sent to the LLM.
+- **Write** — in Edit and Scheduled modes the agent can create, modify, delete, and move notes. Every write operation is presented as a unified diff for your review and requires explicit approval before anything is written to disk.
+
+### Clipboard access
+
+When you click the **Copy** button on a code block in the chat view, the plugin writes that code block's text to your clipboard via the browser Clipboard API. The plugin never reads from your clipboard.
 
 ## Development
 

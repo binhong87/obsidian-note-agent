@@ -59,9 +59,11 @@
 | 通义千问 | 阿里云 Dashscope（qwen-plus、qwen-max 等） |
 | Kimi | 月之暗面（moonshot-v1 系列） |
 | 智谱 | GLM-4 系列 |
+| Z.ai | GLM-4 系列（Z.ai 平台） |
 | MiniMax | MiniMax-Text 系列 |
 | OpenRouter | 通过 openrouter.ai 访问任意模型 |
 | Ollama | 本地模型（Llama、Mistral、Qwen 等） |
+| LM Studio | 通过 LM Studio 运行本地模型 |
 | 自定义 | 任意 OpenAI 兼容或 Anthropic 兼容端点 |
 
 ## 披露说明
@@ -85,11 +87,24 @@
 | DeepSeek | `https://api.deepseek.com` |
 | 通义千问（阿里云） | `https://dashscope.aliyuncs.com` |
 | Kimi（月之暗面） | `https://api.moonshot.cn` |
-| 智谱 / Z.ai | `https://open.bigmodel.cn`、`https://open.z.ai` |
+| 智谱 | `https://open.bigmodel.cn` |
+| Z.ai | `https://open.z.ai` |
 | MiniMax | `https://api.minimax.chat` |
 | OpenRouter | `https://openrouter.ai` |
 
-Ollama 和 LM Studio 仅与 `localhost` 通信，数据不会离开您的设备。
+Ollama 和 LM Studio 仅与 `localhost` 通信，数据不会离开您的设备。自定义服务提供商会连接到您所配置的任意端点。
+
+### 笔记库访问
+
+本插件需要读取、写入和枚举笔记库文件以完成功能：
+
+- **读取** — 读取笔记内容以回答问题、为 LLM 提供上下文，以及在编辑前计算差异。
+- **枚举** — `list_folder` 和 `search_vault` 工具会扫描笔记库中的所有文件（或所有 Markdown 文件）以查找匹配项。仅将与查询相关的文件路径和内容发送给 LLM。
+- **写入** — 在编辑模式和定时模式下，智能体可创建、修改、删除和移动笔记。所有写入操作均以统一差异格式呈现供您审阅，需经过您的明确批准后方可写入磁盘。
+
+### 剪贴板访问
+
+当您点击对话视图中代码块上的**复制**按钮时，插件会通过浏览器 Clipboard API 将该代码块的文本写入您的剪贴板。插件不会读取您的剪贴板内容。
 
 ## 开发
 
