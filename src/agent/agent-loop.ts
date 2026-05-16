@@ -106,7 +106,7 @@ export class AgentLoop {
         const result = await tool.handler(tc.args);
         console.debug(`[agent] tool result (${tc.name}):`, result.slice(0, 300));
         if (result.startsWith(PENDING_PREFIX)) {
-          const payload = JSON.parse(result.slice(PENDING_PREFIX.length));
+          const payload = JSON.parse(result.slice(PENDING_PREFIX.length)) as { tool: string; args: Record<string, unknown> };
           if (this.opts.autoApprove) {
             await this.opts.autoApprove(payload);
             const applied = JSON.stringify({ status: "applied" });

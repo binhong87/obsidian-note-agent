@@ -57,7 +57,7 @@ export class AnthropicProvider implements LLMProvider {
       } else if (o.type === "content_block_stop" && o.index !== undefined) {
         const b = blocks[o.index];
         if (b?.type === "tool_use") {
-          let args: Record<string, unknown> = {}; try { args = JSON.parse(b.buf || "{}"); } catch { args = { _raw: b.buf }; }
+          let args: Record<string, unknown> = {}; try { args = JSON.parse(b.buf || "{}") as Record<string, unknown>; } catch { args = { _raw: b.buf }; }
           yield { type: "tool_call", toolCall: { id: b.id!, name: b.name!, args } };
         }
       } else if (o.type === "message_stop") break;

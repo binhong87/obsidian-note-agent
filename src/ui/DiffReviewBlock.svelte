@@ -43,7 +43,7 @@
   }
 
   $: diffLines = p.diff ? parseDiff(p.diff) : [];
-  $: filePath = p.args?.path ?? p.args?.from ?? p.args?.to ?? "";
+  $: filePath = (p.args?.path ?? p.args?.from ?? p.args?.to ?? "") as string;
   $: fileName = filePath ? filePath.split("/").pop() ?? filePath : "";
 
   async function approveItem() {

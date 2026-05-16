@@ -44,7 +44,7 @@ export class OpenAIProvider implements LLMProvider {
     }
     for (const i of Object.keys(pending)) {
       const p = pending[+i]; let args: Record<string, unknown> = {};
-      try { args = JSON.parse(p.args || "{}"); } catch { args = { _raw: p.args }; }
+      try { args = JSON.parse(p.args || "{}") as Record<string, unknown>; } catch { args = { _raw: p.args }; }
       yield { type: "tool_call", toolCall: { id: p.id ?? `tc_${i}`, name: p.name, args } };
     }
     yield { type: "done" };

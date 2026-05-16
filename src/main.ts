@@ -32,7 +32,7 @@ export default class ObsidianNoteAgentPlugin extends Plugin {
   private currentLoop: AgentLoop | null = null;
 
   async onload() {
-    this.settings = migrateSettings(await this.loadData());
+    this.settings = migrateSettings(await this.loadData() as Parameters<typeof migrateSettings>[0]);
     this.i18n = new I18n(detectLocale(this.settings.locale, moment.locale()));
     this.vault = new VaultService(this.app);
     this.conversations = new ConversationStore(this.app, () => this.settings.chatsFolder);

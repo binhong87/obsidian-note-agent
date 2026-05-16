@@ -38,7 +38,7 @@ export class VaultService {
     const p = validatePath(path);
     const f = this.app.vault.getAbstractFileByPath(p);
     if (!f) throw new Error(`not found: ${p}`);
-    await this.app.vault.delete(f);
+    await this.app.fileManager.trashFile(f);
   }
 
   async moveNote(oldPath: string, newPath: string): Promise<void> {

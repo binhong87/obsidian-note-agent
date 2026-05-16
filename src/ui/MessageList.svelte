@@ -46,15 +46,16 @@
 
   function previewResult(content: string): string {
     try {
-      const json = JSON.parse(content);
+      const json: unknown = JSON.parse(content);
       if (Array.isArray(json)) {
         if (json.length === 0) return "no results";
-        const label = json[0]?.path !== undefined ? "note" : "item";
+        const label = (json[0] as Record<string, unknown> | null)?.path !== undefined ? "note" : "item";
         return `${json.length} ${label}${json.length === 1 ? "" : "s"}`;
       }
       if (json && typeof json === "object") {
-        if ("error" in json) return `error: ${String(json.error).slice(0, 60)}`;
-        if ("status" in json) return String(json.status);
+        const obj = json as Record<string, unknown>;
+        if ("error" in obj) return `error: ${String(obj.error).slice(0, 60)}`;
+        if ("status" in obj) return String(obj.status);
       }
       if (typeof json === "string") return json.slice(0, 80);
     } catch { /* not JSON */ }

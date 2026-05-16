@@ -28,7 +28,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 function parseRateMsg(raw: string): string {
-  try { return JSON.parse(raw)?.error?.message ?? raw; } catch { return raw; }
+  try { return (JSON.parse(raw) as { error?: { message?: string } })?.error?.message ?? raw; } catch { return raw; }
 }
 
 export async function httpJson<T = unknown>(o: HttpOptions): Promise<T> {

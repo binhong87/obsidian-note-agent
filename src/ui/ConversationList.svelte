@@ -6,7 +6,7 @@
   const dispatch = createEventDispatcher<{ select: void; newChat: void }>();
 
   let paths: string[] = [];
-  let active = plugin.currentConversation?.path ?? "";
+  let active = "";
 
   onMount(async () => { paths = await plugin.conversations.list(); });
 

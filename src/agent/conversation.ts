@@ -1,4 +1,4 @@
-import type { Mode, Message, ProviderId } from "../types";
+import type { Mode, Message, ProviderId, ToolCall } from "../types";
 
 export interface ConversationMeta {
   id: string;
@@ -66,7 +66,7 @@ export function parseConversation(md: string): Conversation {
   const fm: Record<string, string> = {};
   for (const line of m[1].split("\n")) {
     const kv = line.match(/^(\w+):\s*(.*)$/); if (!kv) continue;
-    fm[kv[1]] = kv[2].startsWith("\"") ? JSON.parse(kv[2]) : kv[2];
+    fm[kv[1]] = kv[2].startsWith("\"") ? JSON.parse(kv[2]) as string : kv[2];
   }
 
   let bodyText = m[2] ?? "";
@@ -86,7 +86,7 @@ export function parseConversation(md: string): Conversation {
   for (const block of bodyText.split(SEP).filter(x => x.trim())) {
     const meta = block.match(/^<!-- meta: (.+?) -->\n([\s\S]*)$/);
     if (!meta) continue;
-    const parsed = JSON.parse(meta[1]);
+    const parsed = JSON.parse(meta[1]) as { role: Message["role"]; toolCalls?: ToolCall[]; toolCallId?: string; reasoningContent?: string };
     messages.push({ role: parsed.role, content: meta[2], toolCalls: parsed.toolCalls, toolCallId: parsed.toolCallId, reasoningContent: parsed.reasoningContent });
   }
 
